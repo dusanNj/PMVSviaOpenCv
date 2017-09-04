@@ -1,7 +1,4 @@
 #pragma once
-
-
-
 #ifndef _DETECT_FEATURES
 #define _DETECT_FEATURES
 
@@ -24,8 +21,8 @@ public:
 	DetectFeatures();
 	~DetectFeatures();
 
-	void run(std::vector<cv::Mat>&images,
-		const int num, const int csize, const int maxLevel);
+	void run(std::string path,std::string name,
+			 const int csize, const int maxLevel);
 
 	void RunFetureDetect(void);
 	int countImageIndex(void);
@@ -43,6 +40,7 @@ public:
 protected:
 	//const cv::Mat *m_Image;
 	std::vector<cv::Mat> *m_Images;
+	cv::Mat *m_Img;
 	int m_csize;
 	int m_level;
 

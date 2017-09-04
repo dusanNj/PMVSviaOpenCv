@@ -12,9 +12,19 @@ DetectFeatures::~DetectFeatures()
 	
 }
 
-void DetectFeatures::run(std::vector<cv::Mat>&images,
-	const int num, const int csize, const int maxLevel) {
+void DetectFeatures::run(std::string path, std::string name,
+						 const int csize, const int maxLevel) {
+	Organizer readOprionFile(path,name);
+	readOprionFile.init();
+	std::vector<std::string> namesOfFile;
+	readOprionFile.getFileFormDirectory(readOprionFile.getPathTofolder(),
+										readOprionFile.getExtension(),namesOfFile);
+
+	int num = namesOfFile.size();
+
+
 	m_Images = &images;
+
 	m_csize = csize;
 	m_level = maxLevel;
 
