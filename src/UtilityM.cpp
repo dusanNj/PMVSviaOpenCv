@@ -42,16 +42,25 @@ void UtilityM::convertImgToUcharArray(cv::Mat in, int width, int height,
 	
 	for (int j = 0; j < height; j++) {
 		for (int k = 0; k< width; k++) {
-			//unsigned char *u = &imgT.at<uchar>(k, j)/*.val[l]*/;
-			//imgChar.push_back(*u);
 			for (int l = 0; l < 3; l++) {
-				//unsigned char *u = &in.at<cv::Vec3b>(j, k).val[0];
 				unsigned char *u = &in.at<cv::Vec3b>(j, k).val[l];
 				out.push_back(*u);
 			}
-		//	std::cout << j << std::endl;
 		}
 	}
 
 }
 
+void UtilityM::transformImgFromUcharToMat(std::vector<unsigned char> v, cv::Mat& out, int width, int height) {
+	int count = 0;
+	for (int i = 0; i < height;i++) {
+		for (int j = 0; j < width;j++) {
+			for (int k = 0; k < 3; k++) {
+				out.at<cv::Vec3b>(i, j).val[k] = v[count++];
+				std::cout << "r:" << count++ << std::endl;
+			}
+		}
+	}
+
+
+}

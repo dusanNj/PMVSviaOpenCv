@@ -22,17 +22,16 @@ public:
 	void buildImage(const int filter, int w, int h, std::vector<unsigned char>& img);
 	void buildImageByLevel(const int filter, std::vector<int> w, std::vector<int> h, std::vector<std::vector<unsigned char>>& img);
 
-	void setWidthHeightByLevel(std::vector<cv::Mat> im, std::vector<std::vector<int>>& withLevel, 
+	void setWidthHeightByLevel(cv::Mat im, std::vector<std::vector<int>>& withLevel, 
 								std::vector<std::vector<int>>& heightLevel) {
 		std::vector<int> tempVecW;
 		std::vector<int> tempVecH;
-		for (int i = 0; i < im.size();i++) {
 			int wtemp, htemp;
 			
 				for (int j = 0; j < 3; j++) {
 					if (j==0) {
-						tempVecW.push_back(im[i].cols);
-						tempVecH.push_back(im[i].rows);
+						tempVecW.push_back(im.cols);
+						tempVecH.push_back(im.rows);
 					}
 					else {
 						wtemp = tempVecW[j - 1] / 2;
@@ -40,14 +39,11 @@ public:
 						tempVecW.push_back(wtemp);
 						tempVecH.push_back(htemp);
 					}
-				}
-			
-			withLevel.push_back(tempVecW);
-			heightLevel.push_back(tempVecH);
-
-			tempVecW.clear();
-			tempVecH.clear();
 		}
+				withLevel.push_back(tempVecW);
+				heightLevel.push_back(tempVecH);
+				tempVecW.clear();
+				tempVecH.clear();
 	}
 protected:
 	std::vector<unsigned char>  m_images;

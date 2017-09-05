@@ -51,6 +51,13 @@ public:
 	std::string getExtension() {
 		return this->extension;
 	}
+
+	std::string getPathToFile() {
+		return pathTofile;
+	}
+	std::string  getFileName() {
+		return nameOfFile;
+	}
 	//--------------------------------------
 	void init();
 	void readImages();

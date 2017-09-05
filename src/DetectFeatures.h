@@ -25,7 +25,7 @@ public:
 			 const int csize, const int maxLevel);
 
 	void RunFetureDetect(void);
-	int countImageIndex(void);
+	//int countImageIndex(void);
 
 
 	std::vector<std::vector<Cpoint> > m_points;
@@ -34,8 +34,21 @@ public:
 		return alImgChar.size();
 	}
 
+	//getMetode
+	int getmCsize() {
+		return m_csize;
+	}
+	int getmLevel() {
+		return m_level;
+	}
 
+	int getWidtByIndex(int ind, int level) {
+		return imgWidth[ind][level];
+	}
 
+	int getHeightByIndex(int ind, int level) {
+		return imgHeight[ind][level];
+	}
 
 protected:
 	//const cv::Mat *m_Image;

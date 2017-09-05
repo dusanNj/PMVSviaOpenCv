@@ -39,6 +39,8 @@ public:
 		return dc;
 	}
 
+	void transformImgFromUcharToMat(std::vector<unsigned char> v, cv::Mat& out, int width, int height);
+
 protected:
 	drawCornerFor dc;
 	
