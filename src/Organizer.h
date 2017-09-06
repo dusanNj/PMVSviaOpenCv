@@ -62,8 +62,6 @@ public:
 	void init();
 	void readImages();
 	void getFileFormDirectory(std::string pathToFolder, std::string extension, std::vector<std::string>& returnFileNameList);
-
-
 	//--------------------------------------
 
 

@@ -13,7 +13,7 @@ int main(){
 	std::string path = "D:\\DUSAN\\3Lateral\\PMVSviaOpenCV\\vc++\\vc++\\";
 	std::string name = "option0.txt";
 	DetectFeatures df;
-	df.run(path, name,16,3);
+	df.run(path, name,2,3);
 
 	return 0;
 }

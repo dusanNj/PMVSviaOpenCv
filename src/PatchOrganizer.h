@@ -12,14 +12,21 @@ public:
 	PatchOrganizer(DetectFeatures& detectFeatures);
 	void init(void);
 
-
-
-
 	~PatchOrganizer();
 
 	static Patch::Ppatch m_MAXDEPTH;
 	static Patch::Ppatch m_BACKGROUND;
 
+	//getMetode
+	int getmgHeights(int index) {
+		return m_gheights[index];
+	}
+	
+	int getmgWidths(int index) {
+		return m_gwidths[index];
+	}
+
+	
 protected:
 	// Widths of grids
 	std::vector<int> m_gwidths;

@@ -86,6 +86,8 @@ void DetectFeatures::run(std::string path, std::string name,
 	std::cerr << "done" << std::endl;
 
 
+
+
 }
 //
 //int DetectFeatures::countImageIndex() {

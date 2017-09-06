@@ -14,6 +14,7 @@
 #include"Dog.h"
 #include"Organizer.h"
 #include"Detector.h"
+#include"PatchOrganizer.h"
 
 class DetectFeatures
 {
@@ -49,6 +50,8 @@ public:
 	int getHeightByIndex(int ind, int level) {
 		return imgHeight[ind][level];
 	}
+
+	PatchOrganizer m_pos;
 
 protected:
 	//const cv::Mat *m_Image;
