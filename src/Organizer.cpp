@@ -58,9 +58,12 @@ void Organizer::init() {
 				std::cerr << "img is no valid:" << imgs << std::endl;
 			}
 		}
-		//else if (name == "txtfile") {
-		//	ifstr >> txts;
-		//}
+		else if (name == "folder") {
+			ifstr >> pathTofolder;
+		}
+		else if (name == "extension") {
+			ifstr >> extension;
+		}
 	}
 }
 
@@ -87,5 +90,23 @@ void Organizer::readImages() {
 		}
 		images.push_back(tempImg);
 		tempImg.release();
+	}
+}
+
+void Organizer::getFileFormDirectory(std::string pathToFolder, std::string extension, std::vector<std::string>& returnFileNameList) {
+	
+	std::string names;
+	std::string search_path = pathToFolder + extension;
+	WIN32_FIND_DATA fd;
+	HANDLE hFind = ::FindFirstFile(search_path.c_str(), &fd);
+	if (hFind != INVALID_HANDLE_VALUE) {
+		do {
+			// read all (real) files in current folder
+			// , delete '!' read other 2 default folder . and ..
+			if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+				returnFileNameList.push_back(fd.cFileName);
+			}
+		} while (::FindNextFile(hFind, &fd));
+		::FindClose(hFind);
 	}
 }

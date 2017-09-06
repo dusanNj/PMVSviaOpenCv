@@ -12,9 +12,18 @@ DetectFeatures::~DetectFeatures()
 	
 }
 
-void DetectFeatures::run(std::vector<cv::Mat>&images,
-	const int num, const int csize, const int maxLevel) {
-	m_Images = &images;
+void DetectFeatures::run(std::string path, std::string name,
+						 const int csize, const int maxLevel) {
+	Organizer readOprionFile(path,name);
+	readOprionFile.init();
+	std::vector<std::string> namesOfFile;
+	readOprionFile.getFileFormDirectory(readOprionFile.getPathTofolder(),
+										readOprionFile.getExtension(),namesOfFile);
+
+	int num = namesOfFile.size();
+	std::string pathToF = readOprionFile.getPathTofolder();
+
+
 	m_csize = csize;
 	m_level = maxLevel;
 
@@ -34,14 +43,16 @@ void DetectFeatures::run(std::vector<cv::Mat>&images,
 
 
 	UtilityM ut;
+	Image img;
 	std::vector<unsigned char> tempImgUCa;
-	for (int i = 0; i < m_Images->size();i++) {
-		cv::Mat tempMask = cv::Mat::zeros(m_Images->at(i).size(), m_Images->at(i).type());
-		cv::Mat tempedge = cv::Mat::zeros(m_Images->at(i).size(), m_Images->at(i).type());
-
-		int w = m_Images->at(i).cols;
-		int h = m_Images->at(i).rows;
-		cv::Mat temp = m_Images->at(i).clone();
+	for (int i = 0; i < num;i++) {
+		cv::Mat tempImg = cv::imread(pathToF+namesOfFile[i]);
+		cv::Mat tempMask = cv::Mat::zeros(tempImg.size(), tempImg.type());
+		cv::Mat tempedge = cv::Mat::zeros(tempImg.size(), tempImg.type());
+		
+		int w = tempImg.cols;
+		int h = tempImg.rows;
+		cv::Mat temp = tempImg.clone();
 		ut.convertImgToUcharArray(temp, w,h,tempImgUCa);
 		ImagesChar.push_back(tempImgUCa);
 		alImgChar.push_back(ImagesChar);
@@ -58,13 +69,15 @@ void DetectFeatures::run(std::vector<cv::Mat>&images,
 
 		tempMask.release();
 		tempedge.release();
+
+		img.setWidthHeightByLevel(tempImg, imgWidth, imgHeight);
+
+		tempImg.release();
+		temp.release();
 	}
-	std::vector<cv::Mat> imgtemp = *m_Images;
-	Image img;
-	img.setWidthHeightByLevel(imgtemp,imgWidth,imgHeight);
 
 	std::vector<std::vector<unsigned char>> tempL;
-	for (int i = 0; i < m_Images->size();i++) {
+	for (int i = 0; i < num;i++) {
 		img.buildImageByLevel(0, imgWidth[i], imgHeight[i], alImgChar[i]);
 	}
 	
@@ -73,17 +86,19 @@ void DetectFeatures::run(std::vector<cv::Mat>&images,
 	std::cerr << "done" << std::endl;
 
 
-}
 
-int DetectFeatures::countImageIndex() {
-	int i = 0;
 
-	//if (m_Image->empty()) {
-	//	return 0;
-	//}
-	//i++;
-	return i;
 }
+//
+//int DetectFeatures::countImageIndex() {
+//	int i = 0;
+//
+//	//if (m_Image->empty()) {
+//	//	return 0;
+//	//}
+//	//i++;
+//	return i;
+//}
 
 
 void DetectFeatures::RunFetureDetect(void) {
@@ -108,22 +123,21 @@ void DetectFeatures::RunFetureDetect(void) {
 		//------------------------------------------------------------
 
 		std::vector<cv::Point2f> cornPosition;
-		std::vector<std::vector<unsigned char>> tempImg = alImgChar[cn];
 		harris.run(alImgChar[cn], masksChar[0], edgesChar[0],
-			m_Images->at(cn).cols, m_Images->at(cn).rows, m_csize, sigma, cornPosition, result);
+			imgWidth[cn][0], imgHeight[cn][0], m_csize, sigma, cornPosition, result);
 
 		std::multiset<Cpoint>::reverse_iterator rbegin = result.rbegin();
-
-	/*	std::multiset<Cpoint>::iterator bg = result.begin();
-		std::multiset<Cpoint>::iterator end = result.end();*/
-		
 
 		while (rbegin != result.rend()) {
 			m_points[image - 1].push_back(*rbegin);
 			rbegin++;
 		}
 		result.clear();
-		cv::Mat drawFeaturesImg = m_Images->at(cn).clone();
+
+		
+
+		cv::Mat drawFeaturesImg = cv::imread("D:\\DUSAN\\3Lateral\\PMVSviaOpenCV\\vc++\\vc++\\images\\00"+
+												std::to_string(cn)+".png");
 		UtilityM ut;
 		ut.setDrawCorner(UtilityM::drawCornerFor::harris);
 		ut.drawCorners(drawFeaturesImg, cornPosition,cn);
@@ -135,7 +149,7 @@ void DetectFeatures::RunFetureDetect(void) {
 		std::vector<cv::Point2f> cornPositionDog;
 
 		dog.run(alImgChar[cn], maskDogchar[0], edgeDogchar[0],
-			m_Images->at(cn).cols, m_Images->at(cn).rows, m_csize, firstScale, lastScale, resultD, cornPositionDog);
+			imgWidth[cn][0], imgHeight[cn][0], m_csize, firstScale, lastScale, resultD, cornPositionDog);
 
 		std::multiset<Cpoint>::reverse_iterator rbeginD = resultD.rbegin();
 		while (rbeginD != resultD.rend()) {
@@ -143,13 +157,14 @@ void DetectFeatures::RunFetureDetect(void) {
 			rbeginD++;
 		}
 
-		cv::Mat drawFeaturesImgD = m_Images->at(cn).clone();
+		cv::Mat drawFeaturesImgD = cv::imread("D:\\DUSAN\\3Lateral\\PMVSviaOpenCV\\vc++\\vc++\\images\\00" +
+			std::to_string(cn) + ".png");;
 		UtilityM utD;
 		utD.setDrawCorner(UtilityM::drawCornerFor::dog);
 		utD.drawCorners(drawFeaturesImgD, cornPositionDog, cn);
 
 		cn++;
 
-	} while (m_Images->size() > cn);
+	} while (alImgChar.size() > cn);
 //
 }

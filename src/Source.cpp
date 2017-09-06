@@ -10,18 +10,10 @@
 
 
 int main(){
-	std::string path = "D:\\DUSAN\\3Lateral\\W33\\PMVS-OurSolution\\PmvsOurSolution\\PmvsOurSolution\\";
+	std::string path = "D:\\DUSAN\\3Lateral\\PMVSviaOpenCV\\vc++\\vc++\\";
 	std::string name = "option0.txt";
-	Organizer redOptionFile(path, name);
-	redOptionFile.init();
-	redOptionFile.readImages();
-	std::vector<cv::Mat> imgs;
-	imgs = redOptionFile.getImages();
-	int n = redOptionFile.getImagesCount();
-	//cv::Mat inimg = cv::imread("D:\\DUSAN\\3Lateral\\W33\\PMVS-OurSolution\\PmvsOurSolution\\PmvsOurSolution\\00000000.jpg");
 	DetectFeatures df;
-	df.run(imgs,n,16,3);
-	
+	df.run(path, name,2,3);
 
 	return 0;
 }
