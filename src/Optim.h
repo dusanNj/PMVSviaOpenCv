@@ -3,7 +3,7 @@
 #define _OPTION_
 #include <vector>
 #include "patch.h"
-#include"DetectFeatures.h"
+
 
 class DetectFeatures;
 
@@ -14,7 +14,7 @@ public:
 	virtual ~Optim() {};
 	void init(void);
 	void setAxesScales(void);
-
+	void collectImages(const int index, std::vector<int>& indexes) const;
 
 
 	//get i set
@@ -25,9 +25,9 @@ public:
 		this->m_status = m_status;
 	}
 
-
-protected:
 	DetectFeatures& m_df;
+protected:
+	
 	static Optim* m_one;
 
 	//-----------------------------------------------------------------

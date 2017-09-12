@@ -42,6 +42,10 @@ public:
 	Vec3f m_xaxis;
 	Vec3f m_yaxis;
 	Vec3f m_zaxis;
+
+	//cuvanje osa i centara kamera.
+	std::vector<Vec4f> cam_m_center;
+	std::vector<Vec4f> cam_m_oaxis;
 	
 	// intrinsic and extrinsic camera parameters. Compact form.
 	std::vector<float> m_intrinsics;

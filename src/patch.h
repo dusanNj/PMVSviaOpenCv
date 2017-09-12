@@ -5,6 +5,8 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include "vec4.h"
+#include<Windows.h>
+#define NOMINMAX
 
 namespace Patch {
 
@@ -37,10 +39,10 @@ class Cpatch {
   
   //----------------------------------------------------------------------
   inline float score(const float threshold) const{
-    return std::max(0.0f, m_ncc - threshold) * (int)m_images.size();
+    return (std::max)(0.0f, m_ncc - threshold) * (int)m_images.size();
   }
   inline float score2(const float threshold) const{
-    return std::max(0.0f, m_ncc - threshold) * m_timages;
+    return (std::max)(0.0f, m_ncc - threshold) * m_timages;
   }
 
   // average ncc

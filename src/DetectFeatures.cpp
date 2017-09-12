@@ -1,11 +1,16 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "DetectFeatures.h"
+#include<windef.h>
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#define max(a,b)            (((a) > (b)) ? (a) : (b))
 
 
 
-DetectFeatures::DetectFeatures()
+DetectFeatures::DetectFeatures() :m_pos(*this),  m_seed(*this), m_optim(*this), m_exp(*this), m_filt(*this)
 {
 }
-
+//
 
 DetectFeatures::~DetectFeatures()
 {
@@ -13,22 +18,29 @@ DetectFeatures::~DetectFeatures()
 }
 
 void DetectFeatures::run(std::string path, std::string name,
-						 const int csize, const int maxLevel) {
+						 const int csize) {
 	Organizer readOprionFile(path,name);
 	readOprionFile.init();
 	std::vector<std::string> namesOfFile;
 	readOprionFile.getFileFormDirectory(readOprionFile.getPathTofolder(),
 										readOprionFile.getExtension(),namesOfFile);
+	readOprionFile.initVisdata();
 
 	int num = namesOfFile.size();
 	std::string pathToF = readOprionFile.getPathTofolder();
 
+	/*readOprionFile.m_oimages = 0;*/
+
+	m_visdata = readOprionFile.m_visdatatemp;
+	m_visdata2 = readOprionFile.m_visdata2temp;
 
 	m_csize = csize;
-	m_level = maxLevel;
+	m_level = readOprionFile.getLevel();
 
 	m_points.clear();
 	m_points.resize(num);
+
+	m_tau = (std::min)(readOprionFile.m_minImageNum * 2, num);
 
 	//----------------------------------------------------------------------
 	//for (int index = 0; index < num; ++index)
@@ -41,7 +53,7 @@ void DetectFeatures::run(std::string path, std::string name,
 	//	thrd_join(threads[i], NULL);
 	//----------------------------------------------------------------------
 
-
+	//----------------------- Create image level
 	UtilityM ut;
 	Image img;
 	std::vector<unsigned char> tempImgUCa;
@@ -80,12 +92,63 @@ void DetectFeatures::run(std::string path, std::string name,
 	for (int i = 0; i < num;i++) {
 		img.buildImageByLevel(0, imgWidth[i], imgHeight[i], alImgChar[i]);
 	}
+
+	//----------------------- Finish Create image level
 	
+	//----------------------------------- calculate Camera parametras 
+	//for (int i = 0; i < num;i++) {
+	//	std::string namePath;
+	//	std::string tempN;
+	//	if (i<10) {
+	//		tempN = "00" + std::to_string(i) + ".txt";
+	//	}
+	//	else if (i>=10 && i<100) {
+	//		tempN = "0" + std::to_string(i) + ".txt";
+	//	}
+	//	else
+	//	{
+	//		tempN = std::to_string(i) + ".txt";
+	//	}
 
+	//	namePath = readOprionFile.getPathToTxt() + tempN;
+
+	//	Photo photo(num);
+	//	photo.init(namePath,3);
+	//	photos.push_back(photo);
+	//}
+	//----------------------------------- Finish calculate Camera parametras 
+	int n = getNumOfImages();
+	std::cout << "numImg:" << n << std::endl;
+	//----------------------------------- Start features detection
 	RunFetureDetect();
-	std::cerr << "done" << std::endl;
+	std::cerr << "done" << std::endl; 
+	//----------------------------------- Finish features detection
+	m_pos.init();
+	m_seed.init(m_points);
+	m_exp.init();
+	m_filt.init();
+	m_optim.init();
+	
+	m_angleThreshold0 = 60.0f * M_PI / 180.0f;
+	m_angleThreshold1 = 60.0f * M_PI / 180.0f;
 
+	m_countThreshold0 = 2;
+	m_countThreshold1 = 4;
+	m_countThreshold2 = 2;
 
+	m_neighborThreshold = 0.5f;
+	m_neighborThreshold1 = 1.0f;
+
+	m_neighborThreshold2 = 1.0f;
+
+	m_maxAngleThreshold = 10;
+
+	m_nccThresholdBefore = m_nccThreshold - 0.3f;
+
+	m_quadThreshold = 2.0;
+
+	m_epThreshold = 2.0f;
+	m_sequenceThreshold = -1;
 
 
 }
@@ -167,4 +230,24 @@ void DetectFeatures::RunFetureDetect(void) {
 
 	} while (alImgChar.size() > cn);
 //
+}
+
+//================================================
+int DetectFeatures::getMask(int index1,int x, int y, int level) {
+	if (masksChar[level].empty())
+		return 1;
+
+	if (x < 0 || masksChar[level][index1] <= x || y < 0 || masksChar[level][index1] <= y)
+		return 1;
+	
+	const int index = y * imgWidth[level][index1] + x;
+	return masksChar[level][index1];
+}
+//================================================
+
+void DetectFeatures::runMatching() {
+
+	//m_seed.run();
+	//m_seed.clear();
+
 }

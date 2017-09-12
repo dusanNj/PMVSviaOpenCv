@@ -5,7 +5,7 @@
 #include "patch.h"
 #include <list>
 #include "vec2.h"
-#include"DetectFeatures.h"
+//#include"DetectFeatures.h"
 
 class DetectFeatures;
 
