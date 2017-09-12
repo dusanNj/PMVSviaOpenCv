@@ -20,12 +20,19 @@ private:
 	std::string imagesFolder = "images\\";
 	std::string pathTofolder;
 	std::string extension;
+	std::string pathToTxtsFile;
+	
+	int level;
 public:
 	int imgs;
+	int m_minImageNum;
 	//int txts;
 
-	std::vector<int> imgIndex;
+	std::vector<int> imgIndex; // U pmvs-u je ovo m_timages
+	std::vector<int> m_oimages;
 	std::vector<cv::Mat> images;
+	std::vector<std::vector<int> > m_visdatatemp;
+	std::vector<std::vector<int> > m_visdata2temp;
 	//std::vector<int> txtIndex;
 
 	Organizer(std::string path, std::string name);
@@ -40,7 +47,7 @@ public:
 	}
 
 	int getImagesCount() {
-		return images.size();
+		return (int)images.size();
 	}
 	//getMetode
 
@@ -58,10 +65,19 @@ public:
 	std::string  getFileName() {
 		return nameOfFile;
 	}
+
+	std::string getPathToTxt() {
+		return pathToTxtsFile;
+	}
+	int getLevel() {
+		return level;
+	}
 	//--------------------------------------
 	void init();
 	void readImages();
 	void getFileFormDirectory(std::string pathToFolder, std::string extension, std::vector<std::string>& returnFileNameList);
+	void initVisdata(void);
+	void initVisdata2(void);
 	//--------------------------------------
 
 

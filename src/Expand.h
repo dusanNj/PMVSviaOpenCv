@@ -5,8 +5,7 @@
 #include <vector>
 #include <queue>
 #include <list>
-#include "PatchOrganizer.h"
-#include"DetectFeatures.h"
+
 class DetectFeatures;
 
 class Expand

@@ -65,9 +65,9 @@ void Camera::updateCamera(void) {
 	const float ftmp = norm(m_oaxis);
 	m_oaxis[3] = m_projection[0][2][3];
 	m_oaxis /= ftmp;
-
+	cam_m_oaxis.push_back(m_oaxis);
 	m_center = getOpticalCenter();
-
+	cam_m_center.push_back(m_center);
 	m_zaxis = Vec3f(m_oaxis[0], m_oaxis[1], m_oaxis[2]);
 	m_xaxis = Vec3f(m_projection[0][0][0],
 		m_projection[0][0][1],

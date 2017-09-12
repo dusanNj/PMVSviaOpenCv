@@ -252,8 +252,6 @@ void Harris::run( std::vector<std::vector<unsigned char>>& image,
 					cornerPos.erase(cornerPos.begin() + b);
 				
 				}
-				
-				
 			}
 		}
 	}

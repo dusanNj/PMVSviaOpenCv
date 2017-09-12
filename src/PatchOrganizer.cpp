@@ -1,5 +1,5 @@
 #include "PatchOrganizer.h"
-
+#include"DetectFeatures.h"
 using namespace Patch;
 
 Ppatch m_MAXDEPTH(new Cpatch());
@@ -14,8 +14,8 @@ PatchOrganizer::~PatchOrganizer()
 {
 }
 
-void PatchOrganizer::init(void) {
-
+void PatchOrganizer::init() {
+	std::cout << "width:" << m_df.imgWidth[0][3-1] << std::endl;
 	m_pgrids.clear();   m_pgrids.resize(m_df.getNumOfImages());
 	m_vpgrids.clear();  m_vpgrids.resize(m_df.getNumOfImages());
 	m_dpgrids.clear();  m_dpgrids.resize(m_df.getNumOfImages());
@@ -40,8 +40,15 @@ void PatchOrganizer::init(void) {
 			fill(m_dpgrids[index].begin(), m_dpgrids[index].end(), m_MAXDEPTH);
 		}
 	}
+}
 
-
-
-
+void PatchOrganizer::clearCounts(void) {
+	for (int index = 0; index < m_df.getNumOfImages(); ++index) {
+		std::vector<unsigned char>::iterator begin = m_counts[index].begin();
+		std::vector<unsigned char>::iterator end = m_counts[index].end();
+		while (begin != end) {
+			*begin = (unsigned char)0;
+			++begin;
+		}
+	}
 }
