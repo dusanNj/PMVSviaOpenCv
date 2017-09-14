@@ -14,8 +14,13 @@ public:
 		const std::string cname, const int maxLevel = 1);
 	// pairwise distance based on optical center and viewing direction
 	int m_num;
-	void setDistances(void);
+	void setDistances(int m_num, std::vector<Photo> photos);
+	Vec3f project(const int index, const Vec4f& coord,
+		const int level) const;
 	std::vector<std::vector<float> > m_distances;
+
+	//------------------------------------------
+	
 };
 
 

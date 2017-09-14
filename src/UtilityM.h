@@ -13,7 +13,9 @@
 #include<fstream>
 #include<string>
 #include"Camera.h"
-
+#include"Cpoint.h"
+#include <boost/shared_ptr.hpp>
+typedef boost::shared_ptr<Cpoint> Ppoint;
 
 class UtilityM
 {
@@ -75,6 +77,8 @@ public:
 		line /= ftmp;
 		return fabs(line * p0);
 	};
+
+	void WritePlySimple(std::string name, std::vector<std::vector<Ppoint>> point);
 
 protected:
 	drawCornerFor dc;

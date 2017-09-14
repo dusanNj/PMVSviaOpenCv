@@ -71,6 +71,8 @@ public:
 	Photo getPhoto(int index) {
 		return photos[index];
 	}
+
+
 	//std::vector<int> getm_width(int index) {
 	//	return imgWidth[index];
 	//}
@@ -136,7 +138,7 @@ public:
 	int m_sequenceThreshold;
 	// Maximum number of images used in the optimization
 	int m_tau;
-
+	//TODO:6a getMask za canADdd
 	//int getMask(int index, int x, int y, int level);
 	//TODO1
 	//int getMask2(const Vec4f& coord, const int level) const {
@@ -146,6 +148,10 @@ public:
 	//	return 1;
 	//};
 
+	std::vector<std::string> nameOfimages;
+	std::string pathtoFolder;
+
+	std::vector < std::vector<float> >mdf_distance;//distanca koja se dobije za photos
 protected:
 	//const cv::Mat *m_Image;
 	std::vector<cv::Mat> *m_Images;

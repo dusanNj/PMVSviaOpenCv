@@ -15,7 +15,7 @@ PatchOrganizer::~PatchOrganizer()
 }
 
 void PatchOrganizer::init() {
-	std::cout << "width:" << m_df.imgWidth[0][3-1] << std::endl;
+	std::cout << "width:" << m_df.getWidtByIndex(0, m_df.getmLevel()) << std::endl;
 	m_pgrids.clear();   m_pgrids.resize(m_df.getNumOfImages());
 	m_vpgrids.clear();  m_vpgrids.resize(m_df.getNumOfImages());
 	m_dpgrids.clear();  m_dpgrids.resize(m_df.getNumOfImages());
@@ -27,6 +27,7 @@ void PatchOrganizer::init() {
 	for (int index = 0; index < m_df.getNumOfImages(); ++index) {
 		const int gwidth = (m_df.getWidtByIndex(index,m_df.getmLevel())
 			+ m_df.getmCsize() - 1) / m_df.getmCsize();
+		std::cout << "width:" << gwidth << std::endl;
 		const int gheight = (m_df.getHeightByIndex(index, m_df.getmLevel())
 			+ m_df.getmCsize() - 1) / m_df.getmCsize();
 		m_gwidths[index] = gwidth;
@@ -52,3 +53,4 @@ void PatchOrganizer::clearCounts(void) {
 		}
 	}
 }
+

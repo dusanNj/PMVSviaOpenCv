@@ -15,7 +15,12 @@ public:
 	void init(void);
 	void setAxesScales(void);
 	void collectImages(const int index, std::vector<int>& indexes) const;
-
+	//TODO:5a
+	//int preProcess(Patch::Cpatch& patch, const int id, const int seed);
+	void addImages(Patch::Cpatch& patch) const;
+	//TODO:4a
+	/*void constraintImages(Patch::Cpatch& patch, const float nccThreshold,
+		const int id);*/
 
 	//get i set
 	std::vector<int> getmStatus() {

@@ -17,6 +17,7 @@ void Seed::init(const std::vector<std::vector<Cpoint> >& points) {
 	
 	for (int index = 0; index < m_df.getNumOfImages(); ++index) {
 		const int gheight = m_df.m_pos.getmgHeights(index);
+		std::cout << "w:" << gheight << std::endl;
 		const int gwidth = m_df.m_pos.getmgWidths(index);
 		m_ppoints[index].resize(gwidth * gheight);
 	}
@@ -42,9 +43,11 @@ void Seed::run() {
 	m_df.m_jobs.clear();
 
 	std::vector<int> vitmp;
-	for (int i = 0; i < m_df.getNumOfImages();i++) {
-		m_df.m_jobs.insert(m_df.m_jobs.end(), vitmp.begin(),vitmp.end());
-	}
+	for (int i = 0; i <  m_df.getNumOfImages(); ++i)
+		vitmp.push_back(i);
+	//for (int i = 0; i < m_df.getNumOfImages();i++) {
+	//	m_df.m_jobs.insert(m_df.m_jobs.end(), vitmp.begin(),vitmp.end());
+	//}
 
 	random_shuffle(vitmp.begin(), vitmp.end());
 	m_df.m_jobs.insert(m_df.m_jobs.end(), vitmp.begin(), vitmp.end());
@@ -67,19 +70,33 @@ void Seed::run() {
 }
 
 void Seed::initialMatchT(void) {
-	const int id = m_df.m_count++;
-	while (1)
-	{
-		int index = -1;
-		if (!m_df.m_jobs.empty()) {
-			index = m_df.m_jobs.front();
-			m_df.m_jobs.pop_front();
-		}
-		if (index == -1)
-			break;
 
-		initialMatch(index, id);
+	int id = m_df.m_count++;
+	std::list<int> tempL;
+	for (int i=0; i<=1;i++)
+	{
+		int id2 = i;
+		while (1)
+		{
+			//const int id = m_df.m_count++;
+			int index = -1;
+			if (!m_df.m_jobs.empty()) {
+				index = m_df.m_jobs.front();
+				m_df.m_jobs.pop_front();
+				tempL.push_front(index);
+			}
+			if (index == -1) {
+				m_df.m_jobs = tempL;
+				break;
+			}
+
+			initialMatch(index, id2);
+
+		}
 	}
+
+	UtilityM ut;
+	ut.WritePlySimple("D:/DUSAN/3Lateral/PMVSviaOpenCV/vc++/vc++/test.ply",temp3Dpoint);
 }
 /*Ova metoda vraca celije koje ustvari predstavljaju tacke koje konstruisu liniju kada smo presikali tacku
 sa jedne slike na drugu sliku uz pomoc fundamentalne matrice.*/
@@ -277,89 +294,125 @@ void Seed::unproject(const int index0, const int index1,
 }
 
 void Seed::initialMatch(const int index, const int id) {
-	//std::vector<int> indexes;
-	//m_df.m_optim.collectImages(index, indexes);
+	std::vector<int> indexes;
+	m_df.m_optim.collectImages(index, indexes);
+	//TODO: zameniti sa m_df.tm_tao-broj slika koje ucestvuju u optimizaciji
+	if (m_df.getNumOfImages() < (int)indexes.size())
+		indexes.resize(m_df.getNumOfImages());
 
-	//if (m_df.m_tau < (int)indexes.size())
-	//	indexes.resize(m_df.m_tau);
+	if (indexes.empty())
+		return;
 
-	//if (indexes.empty())
-	//	return;
+	int totalcount = 0;
 
-	//int totalcount = 0;
+	//======================================================================
+	// for each feature point, starting from the optical center, keep on
+	// matching until we find candidateThreshold patches
+	const int gheight = m_df.m_pos.getmgHeights(index);
+	const int gwidth = m_df.m_pos.getmgWidths(index);
 
-	////======================================================================
-	//// for each feature point, starting from the optical center, keep on
-	//// matching until we find candidateThreshold patches
-	//const int gheight = m_df.m_pos.getmgWidths[index];
-	//const int gwidth = m_df.m_pos.getmgHeights[index];
+	int index2 = -1;
+	for (int y = 0; y < gheight; ++y) {
+		for (int x = 0; x < gwidth; ++x) {
+			++index2;
+			if (!canAdd(index, x, y))
+				continue;
+			std::vector<Ppoint> vcptemp1;
+			for (int p = 0; p < (int)m_ppoints[index][index2].size(); ++p) {
+				// collect features that satisfies epipolar geometry
+				// constraints and sort them according to the differences of
+				// distances between two cameras.
+				std::vector<Ppoint> vcp;
+				collectCandidates(index, indexes,
+					*m_ppoints[index][index2][p], vcp);
+				vcptemp1 = vcp;
+				//		int count = 0;
+				//		Patch::Cpatch bestpatch;
+				//		//======================================================================
+				//		for (int i = 0; i < (int)vcp.size(); ++i) {
+				//			Patch::Cpatch patch;
+				//			patch.m_coord = vcp[i]->m_coord;
+				//			patch.m_normal =
+				//				m_df.getPhoto(index).m_center - patch.m_coord;
 
-	//int index2 = -1;
-	//for (int y = 0; y < gheight; ++y) {
-	//	for (int x = 0; x < gwidth; ++x) {
-	//		++index2;
-	//		if (!canAdd(index, x, y))
-	//			continue;
+				//			unitize(patch.m_normal);
+				//			patch.m_normal[3] = 0.0;
+				//			patch.m_flag = 0;
 
-	//		for (int p = 0; p < (int)m_ppoints[index][index2].size(); ++p) {
-	//			// collect features that satisfies epipolar geometry
-	//			// constraints and sort them according to the differences of
-	//			// distances between two cameras.
-	//			std::vector<Ppoint> vcp;
-	//			collectCandidates(index, indexes,
-	//				*m_ppoints[index][index2][p], vcp);
+				//			++m_df.m_pos.m_counts[index][index2];
+				//			const int ix = ((int)floor(vcp[i]->m_icoord[0] + 0.5f)) / m_df.getmCsize();
+				//			const int iy = ((int)floor(vcp[i]->m_icoord[1] + 0.5f)) / m_df.getmCsize();
+				//			const int index3 = iy * m_df.m_pos.getmgWidths(vcp[i]->m_itmp) + ix;
+				//			if (vcp[i]->m_itmp < m_df.getNumOfImages())
+				//				++m_df.m_pos.m_counts[vcp[i]->m_itmp][index3];
 
-	//			int count = 0;
-	//			Patch::Cpatch bestpatch;
-	//			//======================================================================
-	//			for (int i = 0; i < (int)vcp.size(); ++i) {
-	//				Patch::Cpatch patch;
-	//				patch.m_coord = vcp[i]->m_coord;
-	//				patch.m_normal =
-	//					m_df.getPhoto(index).m_center - patch.m_coord;
-
-	//				unitize(patch.m_normal);
-	//				patch.m_normal[3] = 0.0;
-	//				patch.m_flag = 0;
-
-	//				++m_df.m_pos.m_counts[index][index2];
-	//				const int ix = ((int)floor(vcp[i]->m_icoord[0] + 0.5f)) / m_df.getmCsize();
-	//				const int iy = ((int)floor(vcp[i]->m_icoord[1] + 0.5f)) / m_df.getmCsize();
-	//				const int index3 = iy * m_df.m_pos.getmgWidths(vcp[i]->m_itmp) + ix;
-	//				if (vcp[i]->m_itmp < m_df.getNumOfImages())
-	//					++m_df.m_pos.m_counts[vcp[i]->m_itmp][index3];
-
-	//				const int flag = initialMatchSub(index, vcp[i]->m_itmp, id, patch);
-	//				if (flag == 0) {
-	//					++count;
-	//					if (bestpatch.score(m_df.m_nccThreshold) <
-	//						patch.score(m_df.m_nccThreshold))
-	//						bestpatch = patch;
-	//					if (m_df.m_countThreshold0 <= count)
-	//						break;
-	//				}
-	//			}
-	//			if (count != 0) {
-	//				Ppatch ppatch(new Cpatch(bestpatch));
-	//				m_df.m_pos.addPatch(ppatch);
-	//				++totalcount;
-	//				break;
-	//			}
-	//		}
-	//	}
-	//}
-	//cerr << '(' << index << ',' << totalcount << ')' << flush;
+				//			const int flag = initialMatchSub(index, vcp[i]->m_itmp, id, patch);
+				//			if (flag == 0) {
+				//				++count;
+				//				if (bestpatch.score(m_df.m_nccThreshold) <
+				//					patch.score(m_df.m_nccThreshold))
+				//					bestpatch = patch;
+				//				if (m_df.m_countThreshold0 <= count)
+				//					break;
+				//			}
+				//		}
+				//		if (count != 0) {
+				//			Ppatch ppatch(new Cpatch(bestpatch));
+				//			m_df.m_pos.addPatch(ppatch);
+				//			++totalcount;
+				//			break;
+				//		}
+				//	}
+				//}
+			}
+			if (!vcptemp1.empty()) {
+				temp3Dpoint.push_back(vcptemp1);
+				//temp3DpointB.insert(temp3DpointB.end(), vcptemp1[0]);
+				vcptemp1.clear();
+			}
+		}
+	}
+	std::cerr << '(' << index << ',' << totalcount << ')' << std::flush;
+	//UtilityM ut;
+	//ut.WritePlySimple("D:/DUSAN/3Lateral/PMVSviaOpenCV/vc++/vc++/test.ply",temp3Dpoint);
 }
-
-int Seed::initialMatchSub(const int index0, const int index1,
-	const int id, Patch::Cpatch& patch) {
-
-}
+		//TODO:3 kasnije dorada tacaka
+//int Seed::initialMatchSub(const int index0, const int index1,
+//	const int id, Patch::Cpatch& patch) {
+//
+//	//----------------------------------------------------------------------
+//	patch.m_images.clear();
+//	patch.m_images.push_back(index0);
+//	patch.m_images.push_back(index1);
+//
+//	++m_scounts[id];
+//
+//	//----------------------------------------------------------------------
+//	// We know that patch.m_coord is inside bimages and inside mask
+//	if (m_fm.m_optim.preProcess(patch, id, 1)) {
+//		++m_fcounts0[id];
+//		return 1;
+//	}
+//
+//	//----------------------------------------------------------------------  
+//	m_fm.m_optim.refinePatch(patch, id, 100);
+//
+//	//----------------------------------------------------------------------
+//	if (m_fm.m_optim.postProcess(patch, id, 1)) {
+//		++m_fcounts1[id];
+//		return 1;
+//	}
+//
+//	++m_pcounts[id];
+//	//----------------------------------------------------------------------
+//	return 0;
+//
+//}
 
 
 int Seed::canAdd(const int index, const int x, const int y) {
-	if (!m_df.getMask(index, m_df.getmCsize() * x, m_df.getmCsize() * y, m_df.getmLevel()))
-		return 0;
+	/*if (!m_df.getMask(index, m_df.getmCsize() * x, m_df.getmCsize() * y, m_df.getmLevel()))
+		return 0;*/
 
 	const int index2 = y * m_df.m_pos.getmgWidths(index) + x;
 
