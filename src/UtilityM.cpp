@@ -64,3 +64,33 @@ void UtilityM::transformImgFromUcharToMat(std::vector<unsigned char> v, cv::Mat&
 
 
 }
+
+void UtilityM::WritePlySimple(std::string name, std::vector<std::vector<Ppoint>> point) {
+	std::ofstream file;
+	file.open(name.c_str());
+	int n = 0;
+	std::vector<Ppoint> tempPoint;
+	for (int i = 0; i < point.size(); i++) {
+		for (int j = 0; j<point[i].size();j++) {
+			tempPoint.push_back(point[i][j]);
+			n = n + j;
+		}
+	}
+	file << "ply" << std::endl;
+	file << "format ascii 1.0" << std::endl;
+	file << "element vertex " << tempPoint.size() << std::endl;
+	file << "property float x" << std::endl;
+	file << "property float y" << std::endl;
+	file << "property float z" << std::endl;
+	//file << "property uchar diffuse_red" << std::endl;
+	//file << "property uchar diffuse_green" << std::endl;
+	//file << "property uchar diffuse_blue" << std::endl;
+	file << "end_header" << std::endl;
+
+	for (int i = 0; i < tempPoint.size(); i++) {
+		file << tempPoint[i]->m_coord[0] << " " << tempPoint[i]->m_coord[1] << " " << tempPoint[i]->m_coord[2] << std::endl;
+	}
+	file.close();
+}
+
+

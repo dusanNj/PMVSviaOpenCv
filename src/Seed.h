@@ -32,10 +32,17 @@ public:
 	void unproject(const int index0, const int index1,
 		const Cpoint& p0, const Cpoint& p1,
 		Vec4f& coord) const;
-	int initialMatchSub(const int index0, const int index1,
-		const int id, Patch::Cpatch& patch);
+	//TODO:3a
+	/*int initialMatchSub(const int index0, const int index1,
+		const int id, Patch::Cpatch& patch);*/
 	DetectFeatures& m_df;
-	
+	// Number of trials
+	std::vector<int> m_scounts;
+
+	//My temp Point 3d
+	std::vector<std::vector<Ppoint>> temp3Dpoint;
+	std::vector<Ppoint> temp3DpointB;
+
 protected:
 
 	std::vector<std::vector<std::vector<Ppoint> > > m_ppoints;

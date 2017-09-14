@@ -27,6 +27,9 @@ public:
 	static void q2proj(const double q[6], Mat4& mat);
 	static void setProjectionSub(double params[], std::vector<Vec4f>& projection,
 		const int level);
+	Vec3f project(const Vec4f& coord,
+		const int level) const;
+
 
 	//----------------------------------------------------------------------
 	// txt file name
@@ -56,6 +59,31 @@ public:
 protected:
 	int m_maxLevel;
 	float m_axesScale;
+};
+
+inline Vec3f Camera::project(const Vec4f& coord,
+	const int level) const {
+	Vec3f vtmp;
+	for (int i = 0; i < 3; ++i)
+		vtmp[i] = m_projection[level][i] * coord;
+
+	if (vtmp[2] <= 0.0) {
+		vtmp[0] = -0xffff;
+		vtmp[1] = -0xffff;
+		vtmp[2] = -1.0f;
+		return vtmp;
+	}
+	else
+		vtmp /= vtmp[2];
+
+	vtmp[0] = (std::max)((float)(INT_MIN + 3.0f),
+		(std::min)((float)(INT_MAX - 3.0f),
+			vtmp[0]));
+	vtmp[1] = (std::max)((float)(INT_MIN + 3.0f),
+		(std::min)((float)(INT_MAX - 3.0f),
+			vtmp[1]));
+
+	return vtmp;
 };
 
 #endif // !_CAMERA_

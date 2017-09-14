@@ -28,6 +28,9 @@ void DetectFeatures::run(std::string path, std::string name,
 
 	int num = namesOfFile.size();
 	std::string pathToF = readOprionFile.getPathTofolder();
+	nameOfimages = namesOfFile;
+	pathtoFolder = pathToF;
+
 
 	/*readOprionFile.m_oimages = 0;*/
 
@@ -96,26 +99,27 @@ void DetectFeatures::run(std::string path, std::string name,
 	//----------------------- Finish Create image level
 	
 	//----------------------------------- calculate Camera parametras 
-	//for (int i = 0; i < num;i++) {
-	//	std::string namePath;
-	//	std::string tempN;
-	//	if (i<10) {
-	//		tempN = "00" + std::to_string(i) + ".txt";
-	//	}
-	//	else if (i>=10 && i<100) {
-	//		tempN = "0" + std::to_string(i) + ".txt";
-	//	}
-	//	else
-	//	{
-	//		tempN = std::to_string(i) + ".txt";
-	//	}
+	Photo photo(num);
+	for (int i = 0; i < num;i++) {
+		std::string namePath;
+		std::string tempN;
+		if (i<10) {
+			tempN = "00" + std::to_string(i) + ".txt";
+		}
+		else if (i>=10 && i<100) {
+			tempN = "0" + std::to_string(i) + ".txt";
+		}
+		else
+		{
+			tempN = std::to_string(i) + ".txt";
+		}
 
-	//	namePath = readOprionFile.getPathToTxt() + tempN;
+		namePath = readOprionFile.getPathToTxt() + tempN;
 
-	//	Photo photo(num);
-	//	photo.init(namePath,3);
-	//	photos.push_back(photo);
-	//}
+		
+		photo.init(namePath,3);
+		photos.push_back(photo);
+	}
 	//----------------------------------- Finish calculate Camera parametras 
 	int n = getNumOfImages();
 	std::cout << "numImg:" << n << std::endl;
@@ -123,6 +127,9 @@ void DetectFeatures::run(std::string path, std::string name,
 	RunFetureDetect();
 	std::cerr << "done" << std::endl; 
 	//----------------------------------- Finish features detection
+	photo.setDistances(n,photos);
+	mdf_distance = photo.m_distances;
+	//std::cout << "photos[0].m_distances[0][0]:" <<mdf_distance[0][0] << std::endl;
 	m_pos.init();
 	m_seed.init(m_points);
 	m_exp.init();
@@ -164,6 +171,8 @@ void DetectFeatures::run(std::string path, std::string name,
 //}
 
 
+
+
 void DetectFeatures::RunFetureDetect(void) {
 	int cn = 0;
 	do {
@@ -184,10 +193,10 @@ void DetectFeatures::RunFetureDetect(void) {
 		maskDogchar.push_back(masksChar[0]);
 		edgeDogchar.push_back(edgesChar[0]);
 		//------------------------------------------------------------
-
+		int fcsize = 16;
 		std::vector<cv::Point2f> cornPosition;
 		harris.run(alImgChar[cn], masksChar[0], edgesChar[0],
-			imgWidth[cn][0], imgHeight[cn][0], m_csize, sigma, cornPosition, result);
+			imgWidth[cn][0], imgHeight[cn][0], fcsize, sigma, cornPosition, result);
 
 		std::multiset<Cpoint>::reverse_iterator rbegin = result.rbegin();
 
@@ -199,8 +208,7 @@ void DetectFeatures::RunFetureDetect(void) {
 
 		
 
-		cv::Mat drawFeaturesImg = cv::imread("D:\\DUSAN\\3Lateral\\PMVSviaOpenCV\\vc++\\vc++\\images\\00"+
-												std::to_string(cn)+".png");
+		cv::Mat drawFeaturesImg = cv::imread(pathtoFolder+nameOfimages[cn]);
 		UtilityM ut;
 		ut.setDrawCorner(UtilityM::drawCornerFor::harris);
 		ut.drawCorners(drawFeaturesImg, cornPosition,cn);
@@ -212,7 +220,7 @@ void DetectFeatures::RunFetureDetect(void) {
 		std::vector<cv::Point2f> cornPositionDog;
 
 		dog.run(alImgChar[cn], maskDogchar[0], edgeDogchar[0],
-			imgWidth[cn][0], imgHeight[cn][0], m_csize, firstScale, lastScale, resultD, cornPositionDog);
+			imgWidth[cn][0], imgHeight[cn][0], fcsize, firstScale, lastScale, resultD, cornPositionDog);
 
 		std::multiset<Cpoint>::reverse_iterator rbeginD = resultD.rbegin();
 		while (rbeginD != resultD.rend()) {
@@ -220,8 +228,7 @@ void DetectFeatures::RunFetureDetect(void) {
 			rbeginD++;
 		}
 
-		cv::Mat drawFeaturesImgD = cv::imread("D:\\DUSAN\\3Lateral\\PMVSviaOpenCV\\vc++\\vc++\\images\\00" +
-			std::to_string(cn) + ".png");;
+		cv::Mat drawFeaturesImgD = cv::imread(pathtoFolder + nameOfimages[cn]);
 		UtilityM utD;
 		utD.setDrawCorner(UtilityM::drawCornerFor::dog);
 		utD.drawCorners(drawFeaturesImgD, cornPositionDog, cn);
@@ -231,6 +238,7 @@ void DetectFeatures::RunFetureDetect(void) {
 	} while (alImgChar.size() > cn);
 //
 }
+
 
 //================================================
 int DetectFeatures::getMask(int index1,int x, int y, int level) {
@@ -247,7 +255,7 @@ int DetectFeatures::getMask(int index1,int x, int y, int level) {
 
 void DetectFeatures::runMatching() {
 
-	//m_seed.run();
+	m_seed.run();
 	//m_seed.clear();
 
 }

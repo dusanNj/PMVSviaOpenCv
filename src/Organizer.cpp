@@ -7,6 +7,7 @@ Organizer::Organizer(std::string path, std::string name)
 	pathTofile = path;
 	nameOfFile = name;
 	m_oimages.push_back(0);
+	m_oimages.clear();
 }
 
 Organizer::~Organizer()

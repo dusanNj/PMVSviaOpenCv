@@ -275,3 +275,4 @@ void Camera::setProjectionSub(double params[], std::vector<Vec4f>& projection, c
 	projection[0] /= scale;
 	projection[1] /= scale;
 }
+

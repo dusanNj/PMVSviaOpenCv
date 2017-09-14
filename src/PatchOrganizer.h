@@ -26,6 +26,7 @@ public:
 	int getmgWidths(int index) {
 		return m_gwidths[index];
 	}
+	
 
 	DetectFeatures& m_df;
 	// image, grid
