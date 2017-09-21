@@ -138,6 +138,8 @@ public:
 	int m_sequenceThreshold;
 	// Maximum number of images used in the optimization
 	int m_tau;
+	int m_wsize;
+	int m_minimagenumthresho;
 	//TODO:6a getMask za canADdd
 	//int getMask(int index, int x, int y, int level);
 	//TODO1
@@ -152,6 +154,12 @@ public:
 	std::string pathtoFolder;
 
 	std::vector < std::vector<float> >mdf_distance;//distanca koja se dobije za photos
+	Vec3f getColor(const int index, const float fx, const float fy,
+		const int level) const;
+	int checkAngles(const Vec4f& coord,
+		const std::vector<int>& indexes,
+		const float minAngle, const float maxAngle,
+		const int num) const;
 protected:
 	//const cv::Mat *m_Image;
 	std::vector<cv::Mat> *m_Images;

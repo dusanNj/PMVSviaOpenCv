@@ -26,7 +26,7 @@ public:
 	int getmgWidths(int index) {
 		return m_gwidths[index];
 	}
-	
+	void setScales(Patch::Cpatch& patch) const;
 
 	DetectFeatures& m_df;
 	// image, grid

@@ -41,13 +41,16 @@ void Seed::readPoints(const std::vector<std::vector<Cpoint> >& points) {
 void Seed::run() {
 	m_df.m_count = 0;
 	m_df.m_jobs.clear();
+	m_scounts.resize(2);
+	m_fcounts0.resize(2);
+
+	fill(m_scounts.begin(), m_scounts.end(), 0);
+	fill(m_fcounts0.begin(), m_fcounts0.end(), 0);
+
 
 	std::vector<int> vitmp;
 	for (int i = 0; i <  m_df.getNumOfImages(); ++i)
 		vitmp.push_back(i);
-	//for (int i = 0; i < m_df.getNumOfImages();i++) {
-	//	m_df.m_jobs.insert(m_df.m_jobs.end(), vitmp.begin(),vitmp.end());
-	//}
 
 	random_shuffle(vitmp.begin(), vitmp.end());
 	m_df.m_jobs.insert(m_df.m_jobs.end(), vitmp.begin(), vitmp.end());
@@ -63,10 +66,7 @@ void Seed::run() {
 				m_df.m_pos.m_counts[index][j] = m_df.m_countThreshold2;
 		}
 	}
-
 	initialMatchT();
-
-
 }
 
 void Seed::initialMatchT(void) {
@@ -89,12 +89,9 @@ void Seed::initialMatchT(void) {
 				m_df.m_jobs = tempL;
 				break;
 			}
-
 			initialMatch(index, id2);
-
 		}
 	}
-
 	UtilityM ut;
 	ut.WritePlySimple("D:/DUSAN/3Lateral/PMVSviaOpenCV/vc++/vc++/test.ply",temp3Dpoint);
 }
@@ -105,10 +102,7 @@ void Seed::collectCells(const int index0, const int index1,
 	Vec3 point(p0.m_icoord[0], p0.m_icoord[1], p0.m_icoord[2]);
 	const int gwidth = m_df.m_pos.getmgWidths(index1);
 	const int gheight = m_df.m_pos.getmgHeights(index1);
-	/*Mat3 F;
-	Image::setF(m_df.m_pss.m_photos[index0], m_df.m_pss.m_photos[index1],
-		F, m_df.getmLevel());*/
-	
+
 	Mat3 F;
 	UtilityM ut;
 	ut.setF(m_df.getPhoto(index0), m_df.getPhoto(index1),F,m_df.getmLevel());
@@ -326,44 +320,44 @@ void Seed::initialMatch(const int index, const int id) {
 				collectCandidates(index, indexes,
 					*m_ppoints[index][index2][p], vcp);
 				vcptemp1 = vcp;
-				//		int count = 0;
-				//		Patch::Cpatch bestpatch;
+						int count = 0;
+						Patch::Cpatch bestpatch;
 				//		//======================================================================
-				//		for (int i = 0; i < (int)vcp.size(); ++i) {
-				//			Patch::Cpatch patch;
-				//			patch.m_coord = vcp[i]->m_coord;
-				//			patch.m_normal =
-				//				m_df.getPhoto(index).m_center - patch.m_coord;
+						for (int i = 0; i < (int)vcp.size(); ++i) {
+							Patch::Cpatch patch;
+							patch.m_coord = vcp[i]->m_coord;
+							patch.m_normal =
+								m_df.getPhoto(index).m_center - patch.m_coord;
 
-				//			unitize(patch.m_normal);
-				//			patch.m_normal[3] = 0.0;
-				//			patch.m_flag = 0;
+							unitize(patch.m_normal);
+							patch.m_normal[3] = 0.0;
+							patch.m_flag = 0;
 
-				//			++m_df.m_pos.m_counts[index][index2];
-				//			const int ix = ((int)floor(vcp[i]->m_icoord[0] + 0.5f)) / m_df.getmCsize();
-				//			const int iy = ((int)floor(vcp[i]->m_icoord[1] + 0.5f)) / m_df.getmCsize();
-				//			const int index3 = iy * m_df.m_pos.getmgWidths(vcp[i]->m_itmp) + ix;
-				//			if (vcp[i]->m_itmp < m_df.getNumOfImages())
-				//				++m_df.m_pos.m_counts[vcp[i]->m_itmp][index3];
+							++m_df.m_pos.m_counts[index][index2];
+							const int ix = ((int)floor(vcp[i]->m_icoord[0] + 0.5f)) / m_df.getmCsize();
+							const int iy = ((int)floor(vcp[i]->m_icoord[1] + 0.5f)) / m_df.getmCsize();
+							const int index3 = iy * m_df.m_pos.getmgWidths(vcp[i]->m_itmp) + ix;
+							if (vcp[i]->m_itmp < m_df.getNumOfImages())
+								++m_df.m_pos.m_counts[vcp[i]->m_itmp][index3];
 
-				//			const int flag = initialMatchSub(index, vcp[i]->m_itmp, id, patch);
-				//			if (flag == 0) {
-				//				++count;
-				//				if (bestpatch.score(m_df.m_nccThreshold) <
-				//					patch.score(m_df.m_nccThreshold))
-				//					bestpatch = patch;
-				//				if (m_df.m_countThreshold0 <= count)
-				//					break;
-				//			}
+							const int flag = initialMatchSub(index, vcp[i]->m_itmp, id, patch);
+							if (flag == 0) {
+								++count;
+								if (bestpatch.score(m_df.m_nccThreshold) <
+									patch.score(m_df.m_nccThreshold))
+									bestpatch = patch;
+								if (m_df.m_countThreshold0 <= count)
+									break;
+							}
 				//		}
-				//		if (count != 0) {
-				//			Ppatch ppatch(new Cpatch(bestpatch));
-				//			m_df.m_pos.addPatch(ppatch);
-				//			++totalcount;
-				//			break;
-				//		}
+						//if (count != 0) {
+						//	Ppatch ppatch(new Cpatch(bestpatch));
+						//	m_df.m_pos.addPatch(ppatch);
+						//	++totalcount;
+						//	break;
+						//}
 				//	}
-				//}
+				}
 			}
 			if (!vcptemp1.empty()) {
 				temp3Dpoint.push_back(vcptemp1);
@@ -373,41 +367,40 @@ void Seed::initialMatch(const int index, const int id) {
 		}
 	}
 	std::cerr << '(' << index << ',' << totalcount << ')' << std::flush;
-	//UtilityM ut;
-	//ut.WritePlySimple("D:/DUSAN/3Lateral/PMVSviaOpenCV/vc++/vc++/test.ply",temp3Dpoint);
 }
-		//TODO:3 kasnije dorada tacaka
-//int Seed::initialMatchSub(const int index0, const int index1,
-//	const int id, Patch::Cpatch& patch) {
-//
-//	//----------------------------------------------------------------------
-//	patch.m_images.clear();
-//	patch.m_images.push_back(index0);
-//	patch.m_images.push_back(index1);
-//
-//	++m_scounts[id];
-//
-//	//----------------------------------------------------------------------
-//	// We know that patch.m_coord is inside bimages and inside mask
-//	if (m_fm.m_optim.preProcess(patch, id, 1)) {
-//		++m_fcounts0[id];
-//		return 1;
-//	}
-//
-//	//----------------------------------------------------------------------  
-//	m_fm.m_optim.refinePatch(patch, id, 100);
-//
-//	//----------------------------------------------------------------------
-//	if (m_fm.m_optim.postProcess(patch, id, 1)) {
-//		++m_fcounts1[id];
-//		return 1;
-//	}
-//
-//	++m_pcounts[id];
-//	//----------------------------------------------------------------------
-//	return 0;
-//
-//}
+
+int Seed::initialMatchSub(const int index0, const int index1,
+	const int id, Patch::Cpatch& patch) {
+
+	//----------------------------------------------------------------------
+	patch.m_images.clear();
+	patch.m_images.push_back(index0);
+	patch.m_images.push_back(index1);
+	if (id > 1) {
+		std::cerr << "id veci od 1" << std::endl;
+	}
+	++m_scounts[id];
+
+	//----------------------------------------------------------------------
+	// We know that patch.m_coord is inside bimages and inside mask
+	if (m_df.m_optim.preProcess(patch, id, 1)) {
+		++m_fcounts0[id];
+		return 1;
+	}
+
+	//----------------------------------------------------------------------  
+	//m_df.m_optim.refinePatch(patch, id, 100);
+
+	////----------------------------------------------------------------------
+	//if (m_df.m_optim.postProcess(patch, id, 1)) {
+	//	++m_fcounts1[id];
+	//	return 1;
+	//}
+
+	//++m_pcounts[id];
+	//----------------------------------------------------------------------
+	return 0;
+}
 
 
 int Seed::canAdd(const int index, const int x, const int y) {

@@ -38,6 +38,8 @@ void DetectFeatures::run(std::string path, std::string name,
 	m_visdata2 = readOprionFile.m_visdata2temp;
 
 	m_csize = csize;
+	m_wsize = 5;
+	m_minimagenumthresho = 2;
 	m_level = readOprionFile.getLevel();
 
 	m_points.clear();
@@ -252,6 +254,84 @@ int DetectFeatures::getMask(int index1,int x, int y, int level) {
 	return masksChar[level][index1];
 }
 //================================================
+Vec3f DetectFeatures::getColor(const int indexIm, const float x, const float y,
+	const int level) const {
+
+	// Bilinear cases
+	const int lx = static_cast<int>(x);
+	const int ly = static_cast<int>(y);
+	const int index = 3 * (ly * imgWidth[indexIm][level] + lx);
+
+	const float dx1 = x - lx;  const float dx0 = 1.0f - dx1;
+	const float dy1 = y - ly;  const float dy0 = 1.0f - dy1;
+
+	const float f00 = dx0 * dy0;  const float f01 = dx0 * dy1;
+	const float f10 = dx1 * dy0;  const float f11 = dx1 * dy1;
+	const int index2 = index + 3 * imgWidth[indexIm][level];
+
+#ifdef IMAGE_GAMMA
+	const float* fp0 = &m_dimages[level][index] - 1;
+	const float* fp1 = &m_dimages[level][index2] - 1;
+	float r = 0.0f;  float g = 0.0f;  float b = 0.0f;
+	r += *(++fp0) * f00 + *(++fp1) * f01;
+	g += *(++fp0) * f00 + *(++fp1) * f01;
+	b += *(++fp0) * f00 + *(++fp1) * f01;
+	r += *(++fp0) * f10 + *(++fp1) * f11;
+	g += *(++fp0) * f10 + *(++fp1) * f11;
+	b += *(++fp0) * f10 + *(++fp1) * f11;
+	return Vec3f(r, g, b);
+	/*
+	return Vec3f(m_dimages[level][index] * f00 + m_dimages[level][index + 3] * f10 +
+	m_dimages[level][index2] * f01 + m_dimages[level][index2 + 3] * f11,
+	m_dimages[level][index + 1] * f00 + m_dimages[level][index + 4] * f10 +
+	m_dimages[level][index2 + 1] * f01 + m_dimages[level][index2 + 4] * f11,
+	m_dimages[level][index + 2] * f00 + m_dimages[level][index + 5] * f10 +
+	m_dimages[level][index2 + 2] * f01 + m_dimages[level][index2 + 5] * f11);
+	*/
+#else
+	const unsigned char* ucp0 = &alImgChar[indexIm][level][index] - 1;
+	const unsigned char* ucp1 = &alImgChar[indexIm][level][index2] - 1;
+	float r = 0.0f;  float g = 0.0f;  float b = 0.0f;
+	r += *(++ucp0) * f00 + *(++ucp1) * f01;
+	g += *(++ucp0) * f00 + *(++ucp1) * f01;
+	b += *(++ucp0) * f00 + *(++ucp1) * f01;
+	r += *(++ucp0) * f10 + *(++ucp1) * f11;
+	g += *(++ucp0) * f10 + *(++ucp1) * f11;
+	b += *(++ucp0) * f10 + *(++ucp1) * f11;
+	return Vec3f(r, g, b);
+#endif
+
+}
+
+int DetectFeatures::checkAngles(const Vec4f& coord,
+	const std::vector<int>& indexes,
+	const float minAngle, const float maxAngle,
+	const int num) const {
+	int count = 0;
+
+	std::vector<Vec4f> rays;  rays.resize((int)indexes.size());
+	for (int i = 0; i < (int)indexes.size(); ++i) {
+		const int index = indexes[i];
+		rays[i] = photos[index].m_center - coord;
+		unitize(rays[i]);
+	}
+
+	for (int i = 0; i < (int)indexes.size(); ++i) {
+		for (int j = i + 1; j < (int)indexes.size(); ++j) {
+			const float dot = (std::max)(-1.0f, (std::min)(1.0f, rays[i] * rays[j]));
+			const float angle = acos(dot);
+			if (minAngle < angle && angle < maxAngle)
+				++count;
+		}
+	}
+
+	//if (count < num * (num - 1) / 2)
+	if (count < 1)
+		return 1;
+	else
+		return 0;
+}
+
 
 void DetectFeatures::runMatching() {
 

@@ -21,7 +21,7 @@ void Photo::init(/*const std::string name, const std::string mname,
 postoji angle treshold koji mora biti zadovoljen zatim se postavljaju dobijene distance*/
 Vec3f Photo::project(const int index, const Vec4f& coord,
 	const int level) const {
-	Camera::project(coord,level);
+	return Camera::project(coord,level);
 }
 
 void Photo::setDistances(int m_num,std::vector<Photo> photos) {
