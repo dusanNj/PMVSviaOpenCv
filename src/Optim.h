@@ -52,8 +52,25 @@ public:
 		std::vector<int>& indexes,
 		std::vector<float>& units,
 		std::vector<Vec4f>& rays) const;
+	void computeUnits(const Patch::Cpatch& patch,
+		std::vector<float>& units) const;
+	void encode(const Vec4f& coord, const Vec4f& normal,
+		double* const vect, const int id) const;
+	void encode(const Vec4f& coord,
+		double* const vect, const int id) const;
+	static double my_f(unsigned n, const double *x, double *grad, void *my_func_data);
 	// Grabbed texture
 	std::vector<std::vector<std::vector<float> > > m_texsT; // last is 7x7x3 patch
+
+	// For threads
+	std::vector<float> m_vect0T;
+	std::vector<Vec4f> m_centersT;
+	std::vector<Vec4f> m_raysT;
+	std::vector<std::vector<int> > m_indexesT;
+	std::vector<float> m_dscalesT;
+	std::vector<float> m_ascalesT;
+	// weights for refineDepthOrientationWeighed
+	std::vector<std::vector<float> > m_weightsT;
 
 	DetectFeatures& m_df;
 protected:

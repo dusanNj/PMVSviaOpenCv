@@ -1,5 +1,6 @@
 #include "Optim.h"
 #include"DetectFeatures.h"
+#include "nlopt.hpp"
 Optim* Optim::m_one = NULL;
 
 Optim::Optim(DetectFeatures& detectFeatures) : m_df(detectFeatures)
@@ -24,7 +25,17 @@ void Optim::init(void) {
 			m_texsT[i][j].resize(3*m_df.m_wsize*m_df.m_wsize);
 		}
 	}
+	m_weightsT.resize(2);
+	m_weightsT[0].resize(2);
+	m_weightsT[1].resize(2);
 
+
+	m_vect0T.resize(2);
+	m_centersT.resize(2);
+	m_raysT.resize(2);
+	m_indexesT.resize(2);
+	m_dscalesT.resize(2);
+	m_ascalesT.resize(2);
 
 	setAxesScales();
 }
@@ -522,7 +533,229 @@ int Optim::grabTex(const Vec4f& coord, const Vec4f& pxaxis, const Vec4f& pyaxis,
 	return 0;
 }
 
+double Optim::my_f(unsigned n, const double *x, double *grad, void *my_func_data){
+	 // double xs[3] = {x[0], x[1], x[2]};
+  //const int id = *((int*)my_func_data);
+
+  //const float angle1 = xs[1] * m_one->m_ascalesT[id];
+  //const float angle2 = xs[2] * m_one->m_ascalesT[id];
+
+  //double ret = 0.0;
+
+  ////?????
+  //const double bias = 0.0f;//2.0 - exp(- angle1 * angle1 / sigma2) - exp(- angle2 * angle2 / sigma2);
+  //
+  //Vec4f coord, normal;
+  //m_one->decode(coord, normal, xs, id);
+  //
+  //const int index = m_one->m_indexesT[id][0];
+  //Vec4f pxaxis, pyaxis;
+  //m_one->getPAxes(index, coord, normal, pxaxis, pyaxis);
+  //
+  //const int size = min(m_one->m_fm.m_tau, (int)m_one->m_indexesT[id].size());
+  //const int mininum = min(m_one->m_fm.m_minImageNumThreshold, size);
+
+  //for (int i = 0; i < size; ++i) {
+  //  int flag;
+  //  flag = m_one->grabTex(coord, pxaxis, pyaxis, normal, m_one->m_indexesT[id][i],
+  //                        m_one->m_fm.m_wsize, m_one->m_texsT[id][i]);
+
+  //  if (flag == 0)
+  //    m_one->normalize(m_one->m_texsT[id][i]);
+  //}
+
+  //const int pairwise = 0;
+  //if (pairwise) {
+  //  double ans = 0.0f;
+  //  int denom = 0;
+  //  for (int i = 0; i < size; ++i) {
+  //    for (int j = i+1; j < size; ++j) {
+  //      if (m_one->m_texsT[id][i].empty() || m_one->m_texsT[id][j].empty())
+  //        continue;
+  //      
+  //      ans += robustincc(1.0 - m_one->dot(m_one->m_texsT[id][i], m_one->m_texsT[id][j]));
+  //      denom++;
+  //    }
+  //  }
+  //  if (denom <
+  //      //m_one->m_fm.m_minImageNumThreshold *
+  //      //(m_one->m_fm.m_minImageNumThreshold - 1) / 2)
+  //      mininum * (mininum - 1) / 2)
+  //    ret = 2.0f;
+  //  else
+  //    ret = ans / denom + bias;
+  //}
+  //else {
+  //  if (m_one->m_texsT[id][0].empty())
+  //    return 2.0;
+  //    
+  //  double ans = 0.0f;
+  //  int denom = 0;
+  //  for (int i = 1; i < size; ++i) {
+  //    if (m_one->m_texsT[id][i].empty())
+  //      continue;
+  //    ans +=
+  //      robustincc(1.0 - m_one->dot(m_one->m_texsT[id][0], m_one->m_texsT[id][i]));
+  //    denom++;
+  //  }
+  //  //if (denom < m_one->m_fm.m_minImageNumThreshold - 1)
+  //  if (denom < mininum - 1)
+  //    ret = 2.0f;
+  //  else
+  //    ret = ans / denom + bias;
+  //}
+
+  //return ret;
+}
+
 bool Optim::refinePatchBFGS(Patch::Cpatch& patch, const int id,
 	const int time, const int ncc) {
+
+	int idtmp = id;
+
+	m_centersT[id] = patch.m_coord;
+	m_raysT[id] = patch.m_coord - m_df.getPhoto(patch.m_images[0]).m_center;
+	unitize(m_raysT[id]);
+	m_indexesT[id] = patch.m_images;
+
+	m_dscalesT[id] = patch.m_dscale;
+	m_ascalesT[id] = M_PI / 48.0f; //patch.m_ascale;
+
+	computeUnits(patch, m_weightsT[id]);
+
+	for (int i = 1; i < (int)m_weightsT[id].size(); ++i)
+		m_weightsT[id][i] = (std::min)(1.0f, m_weightsT[id][0] / m_weightsT[id][i]);
+	m_weightsT[id][0] = 1.0f;
+
+	double p[3];
+	encode(patch.m_coord, patch.m_normal, p, id);
+
+	double min_angle = -23.99999;
+	double max_angle = 23.99999;
+
+	std::vector<double> lower_bounds(3);
+	lower_bounds[0] = -HUGE_VAL;		// Not bound
+	lower_bounds[1] = min_angle;
+	lower_bounds[2] = min_angle;
+	std::vector<double> upper_bounds(3);
+	upper_bounds[0] = HUGE_VAL;		// Not bound
+	upper_bounds[1] = max_angle;
+	upper_bounds[2] = max_angle;
+
+	bool success = false;
+
+	try
+	{
+		// LN_NELDERMEAD: Corresponds to the N-Simplex-Algorithm of GSL, that was used originally here
+		// LN_SBPLX
+		// LN_COBYLA
+		// LN_BOBYQA
+		// LN_PRAXIS
+		nlopt::opt opt(nlopt::LN_BOBYQA, 3);
+		opt.set_min_objective(my_f, &idtmp);
+		opt.set_xtol_rel(1.e-7);
+		opt.set_maxeval(time);
+
+		opt.set_lower_bounds(lower_bounds);
+		opt.set_upper_bounds(upper_bounds);
+
+		std::vector<double> x(3);
+		for (int i = 0; i < 3; i++)
+		{
+			// NLOPT returns an error if x is not within the bounds
+			x[i] = std::max(std::min(p[i], upper_bounds[i]), lower_bounds[i]);
+		}
+
+		double minf;
+		nlopt::result result = opt.optimize(x, minf);
+
+		p[0] = x[0];
+		p[1] = x[1];
+		p[2] = x[2];
+
+		success = (result == nlopt::SUCCESS
+			|| result == nlopt::STOPVAL_REACHED
+			|| result == nlopt::FTOL_REACHED
+			|| result == nlopt::XTOL_REACHED);
+	}
+	catch (std::exception &e)
+	{
+		success = false;
+	}
+
+	if (success) {
+		decode(patch.m_coord, patch.m_normal, p, id);
+
+		patch.m_ncc = 1.0 -
+			unrobustincc(computeINCC(patch.m_coord,
+				patch.m_normal, patch.m_images, id, 1));
+
+	}
+	else {
+		return false;
+	}
+
+	return true;
+
+
+}
+void Optim::encode(const Vec4f& coord,
+	double* const vect, const int id) const {
+	vect[0] = (coord - m_centersT[id]) * m_raysT[id] / m_dscalesT[id];
+}
+
+void Optim::encode(const Vec4f& coord, const Vec4f& normal,
+	double* const vect, const int id) const {
+
+	encode(coord, vect, id);
+
+	const int image = m_indexesT[id][0];
+	const float fx = m_xaxes[image] * proj(normal); // projects from 4D to 3D, divide by last value
+	const float fy = m_yaxes[image] * proj(normal);
+	const float fz = m_zaxes[image] * proj(normal);
+
+	vect[2] = asin(std::max(-1.0f, std::min(1.0f, fy)));
+	const float cosb = cos(vect[2]);
+
+	if (cosb == 0.0)
+		vect[1] = 0.0;
+	else {
+		const float sina = fx / cosb;
+		const float cosa = -fz / cosb;
+		vect[1] = acos(std::max(-1.0f, std::min(1.0f, cosa)));
+		if (sina < 0.0)
+			vect[1] = -vect[1];
+	}
+
+	vect[1] = vect[1] / m_ascalesT[id];
+	vect[2] = vect[2] / m_ascalesT[id];
+}
+
+void Optim::computeUnits(const Patch::Cpatch& patch,
+	std::vector<float>& units) const {
+
+	const int size = (int)patch.m_images.size();
+	units.resize(size);
+
+	std::vector<int>::const_iterator bimage = patch.m_images.begin();
+	std::vector<int>::const_iterator eimage = patch.m_images.end();
+
+	std::vector<float>::iterator bfine = units.begin();
+
+	while (bimage != eimage) {
+		*bfine = INT_MAX / 2;
+
+		*bfine = getUnit(*bimage, patch.m_coord);
+		Vec4f ray = m_df.getPhoto(*bimage).m_center - patch.m_coord;
+		unitize(ray);
+		const float denom = ray * patch.m_normal;
+		if (0.0 < denom)
+			*bfine /= denom;
+		else
+			*bfine = INT_MAX / 2;
+
+		++bimage;
+		++bfine;
+	}
 
 }
