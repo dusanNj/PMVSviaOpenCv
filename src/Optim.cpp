@@ -1,6 +1,12 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
+
+#include <algorithm>
+#include <numeric>
+#include <cstdio>
 #include "Optim.h"
 #include"DetectFeatures.h"
-#include "nlopt.hpp"
+#include"nlopt.hpp"
 Optim* Optim::m_one = NULL;
 
 Optim::Optim(DetectFeatures& detectFeatures) : m_df(detectFeatures)
@@ -74,7 +80,7 @@ void Optim::collectImages(const int index, std::vector<int>& indexes)const {
 	 m_distances.*/
 	indexes.clear();
 	Vec4f ray0 = m_df.photos[index].m_oaxis;
-	std::cout << "ray:" << ray0 << std::endl;
+	//std::cout << "ray:" << ray0 << std::endl;
 	ray0[3] = 0.0f;
 
 	std::vector<Vec2f> candidates;
@@ -90,10 +96,10 @@ void Optim::collectImages(const int index, std::vector<int>& indexes)const {
 
 	Vec4f ray1 = m_df.getPhoto(indextmp).m_oaxis;
 	ray1[3] = 0.0f;
-	std::cout << "ray1:" << ray1 << std::endl;
+	//std::cout << "ray1:" << ray1 << std::endl;
 	if (ray0 * ray1 < cos(m_df.m_angleThreshold0))
 		continue;
-	std::cout << "m_distances:" << m_df.mdf_distance[index][indextmp] << std::endl;
+	//std::cout << "m_distances:" << m_df.mdf_distance[index][indextmp] << std::endl;
 	candidates.push_back(Vec2f(m_df.mdf_distance[index][indextmp], indextmp));
 	}
 
@@ -534,78 +540,78 @@ int Optim::grabTex(const Vec4f& coord, const Vec4f& pxaxis, const Vec4f& pyaxis,
 }
 
 double Optim::my_f(unsigned n, const double *x, double *grad, void *my_func_data){
-	 // double xs[3] = {x[0], x[1], x[2]};
-  //const int id = *((int*)my_func_data);
+	  double xs[3] = {x[0], x[1], x[2]};
+  const int id = *((int*)my_func_data);
 
-  //const float angle1 = xs[1] * m_one->m_ascalesT[id];
-  //const float angle2 = xs[2] * m_one->m_ascalesT[id];
+  const float angle1 = xs[1] * m_one->m_ascalesT[id];
+  const float angle2 = xs[2] * m_one->m_ascalesT[id];
 
-  //double ret = 0.0;
+  double ret = 0.0;
 
-  ////?????
-  //const double bias = 0.0f;//2.0 - exp(- angle1 * angle1 / sigma2) - exp(- angle2 * angle2 / sigma2);
-  //
-  //Vec4f coord, normal;
-  //m_one->decode(coord, normal, xs, id);
-  //
-  //const int index = m_one->m_indexesT[id][0];
-  //Vec4f pxaxis, pyaxis;
-  //m_one->getPAxes(index, coord, normal, pxaxis, pyaxis);
-  //
-  //const int size = min(m_one->m_fm.m_tau, (int)m_one->m_indexesT[id].size());
-  //const int mininum = min(m_one->m_fm.m_minImageNumThreshold, size);
+  //?????
+  const double bias = 0.0f;//2.0 - exp(- angle1 * angle1 / sigma2) - exp(- angle2 * angle2 / sigma2);
+  
+  Vec4f coord, normal;
+  m_one->decode(coord, normal, xs, id);
+  
+  const int index = m_one->m_indexesT[id][0];
+  Vec4f pxaxis, pyaxis;
+  m_one->getPAxes(index, coord, normal, pxaxis, pyaxis);
+  
+  const int size = (std::min)(m_one->m_df.m_tau, (int)m_one->m_indexesT[id].size());
+  const int mininum = std::min(m_one->m_df.m_minimagenumthresho, size);
 
-  //for (int i = 0; i < size; ++i) {
-  //  int flag;
-  //  flag = m_one->grabTex(coord, pxaxis, pyaxis, normal, m_one->m_indexesT[id][i],
-  //                        m_one->m_fm.m_wsize, m_one->m_texsT[id][i]);
+  for (int i = 0; i < size; ++i) {
+    int flag;
+    flag = m_one->grabTex(coord, pxaxis, pyaxis, normal, m_one->m_indexesT[id][i],
+                          m_one->m_df.m_wsize, m_one->m_texsT[id][i]);
 
-  //  if (flag == 0)
-  //    m_one->normalize(m_one->m_texsT[id][i]);
-  //}
+    if (flag == 0)
+      m_one->normalize(m_one->m_texsT[id][i]);
+  }
 
-  //const int pairwise = 0;
-  //if (pairwise) {
-  //  double ans = 0.0f;
-  //  int denom = 0;
-  //  for (int i = 0; i < size; ++i) {
-  //    for (int j = i+1; j < size; ++j) {
-  //      if (m_one->m_texsT[id][i].empty() || m_one->m_texsT[id][j].empty())
-  //        continue;
-  //      
-  //      ans += robustincc(1.0 - m_one->dot(m_one->m_texsT[id][i], m_one->m_texsT[id][j]));
-  //      denom++;
-  //    }
-  //  }
-  //  if (denom <
-  //      //m_one->m_fm.m_minImageNumThreshold *
-  //      //(m_one->m_fm.m_minImageNumThreshold - 1) / 2)
-  //      mininum * (mininum - 1) / 2)
-  //    ret = 2.0f;
-  //  else
-  //    ret = ans / denom + bias;
-  //}
-  //else {
-  //  if (m_one->m_texsT[id][0].empty())
-  //    return 2.0;
-  //    
-  //  double ans = 0.0f;
-  //  int denom = 0;
-  //  for (int i = 1; i < size; ++i) {
-  //    if (m_one->m_texsT[id][i].empty())
-  //      continue;
-  //    ans +=
-  //      robustincc(1.0 - m_one->dot(m_one->m_texsT[id][0], m_one->m_texsT[id][i]));
-  //    denom++;
-  //  }
-  //  //if (denom < m_one->m_fm.m_minImageNumThreshold - 1)
-  //  if (denom < mininum - 1)
-  //    ret = 2.0f;
-  //  else
-  //    ret = ans / denom + bias;
-  //}
+  const int pairwise = 0;
+  if (pairwise) {
+    double ans = 0.0f;
+    int denom = 0;
+    for (int i = 0; i < size; ++i) {
+      for (int j = i+1; j < size; ++j) {
+        if (m_one->m_texsT[id][i].empty() || m_one->m_texsT[id][j].empty())
+          continue;
+        
+        ans += robustincc(1.0 - m_one->dot(m_one->m_texsT[id][i], m_one->m_texsT[id][j]));
+        denom++;
+      }
+    }
+    if (denom <
+        //m_one->m_fm.m_minImageNumThreshold *
+        //(m_one->m_fm.m_minImageNumThreshold - 1) / 2)
+        mininum * (mininum - 1) / 2)
+      ret = 2.0f;
+    else
+      ret = ans / denom + bias;
+  }
+  else {
+    if (m_one->m_texsT[id][0].empty())
+      return 2.0;
+      
+    double ans = 0.0f;
+    int denom = 0;
+    for (int i = 1; i < size; ++i) {
+      if (m_one->m_texsT[id][i].empty())
+        continue;
+      ans +=
+        robustincc(1.0 - m_one->dot(m_one->m_texsT[id][0], m_one->m_texsT[id][i]));
+      denom++;
+    }
+    //if (denom < m_one->m_fm.m_minImageNumThreshold - 1)
+    if (denom < mininum - 1)
+      ret = 2.0f;
+    else
+      ret = ans / denom + bias;
+  }
 
-  //return ret;
+  return ret;
 }
 
 bool Optim::refinePatchBFGS(Patch::Cpatch& patch, const int id,
@@ -697,7 +703,7 @@ bool Optim::refinePatchBFGS(Patch::Cpatch& patch, const int id,
 
 	return true;
 
-
+	 
 }
 void Optim::encode(const Vec4f& coord,
 	double* const vect, const int id) const {
@@ -730,7 +736,26 @@ void Optim::encode(const Vec4f& coord, const Vec4f& normal,
 	vect[1] = vect[1] / m_ascalesT[id];
 	vect[2] = vect[2] / m_ascalesT[id];
 }
+void Optim::decode(Vec4f& coord, Vec4f& normal,
+	const double* const vect, const int id) const {
 
+	decode(coord, vect, id);
+	const int image = m_indexesT[id][0];
+
+	const float angle1 = vect[1] * m_ascalesT[id];
+	const float angle2 = vect[2] * m_ascalesT[id];
+
+	const float fx = sin(angle1) * cos(angle2);
+	const float fy = sin(angle2);
+	const float fz = -cos(angle1) * cos(angle2);
+
+	Vec3f ftmp = m_xaxes[image] * fx + m_yaxes[image] * fy + m_zaxes[image] * fz;
+	normal = Vec4f(ftmp[0], ftmp[1], ftmp[2], 0.0f);
+
+}
+void Optim::decode(Vec4f& coord, const double* const vect, const int id) const {
+	coord = m_centersT[id] + m_dscalesT[id] * vect[0] * m_raysT[id];
+}
 void Optim::computeUnits(const Patch::Cpatch& patch,
 	std::vector<float>& units) const {
 
@@ -757,5 +782,250 @@ void Optim::computeUnits(const Patch::Cpatch& patch,
 		++bimage;
 		++bfine;
 	}
+
+}
+
+
+void Optim::refinePatch(Patch::Cpatch& patch, const int id,
+	const int time) {
+	if (!refinePatchBFGS(patch, id, 1000, 1))
+		std::cout << "refinePatchBFGS failed!" << std::endl;
+
+	if (patch.m_images.empty())
+		return;
+}
+
+double Optim::computeINCC(const Vec4f& coord, const Vec4f& normal,
+	const std::vector<int>& indexes, const int id,
+	const int robust) {
+
+	if ((int)indexes.size() < 2)
+		return 2.0;
+
+	const int index = indexes[0];
+	Vec4f pxaxis, pyaxis;
+	getPAxes(index, coord, normal, pxaxis, pyaxis);
+
+	return computeINCC(coord, normal, indexes, pxaxis, pyaxis, id, robust);
+
+}
+double Optim::computeINCC(const Vec4f& coord, const Vec4f& normal,
+	const std::vector<int>& indexes, const Vec4f& pxaxis,
+	const Vec4f& pyaxis, const int id,
+	const int robust) {
+	if ((int)indexes.size() < 2)
+		return 2.0;
+
+	const int size = (std::min)(m_df.m_tau, (int)indexes.size());
+	std::vector<std::vector<float> >& texs = m_texsT[id];
+
+	for (int i = 0; i < size; ++i) {
+		int flag;
+		flag = grabTex(coord, pxaxis, pyaxis, normal,
+			indexes[i], m_df.m_wsize, texs[i]);
+
+		if (flag == 0)
+			normalize(texs[i]);
+	}
+
+	if (texs[0].empty())
+		return 2.0;
+
+	double score = 0.0;
+
+	// pure pairwise of reference based
+#ifdef PMVS_PAIRNCC
+	float totalweight = 0.0;
+	for (int i = 0; i < size; ++i) {
+		for (int j = i + 1; j < size; ++j) {
+			if (!texs[i].empty() && !texs[j].empty()) {
+				const float ftmp = m_weightsT[id][i] * m_weightsT[id][j];
+				totalweight += ftmp;
+				if (robust)
+					score += robustincc(1.0 - dot(texs[i], texs[j])) * ftmp;
+				else
+					score += (1.0 - dot(texs[i], texs[j])) * ftmp;
+			}
+		}
+	}
+
+	if (totalweight == 0.0)
+		score = 2.0;
+	else
+		score /= totalweight;
+#else
+	float totalweight = 0.0;
+	for (int i = 1; i < size; ++i) {
+		if (!texs[i].empty()) {
+			totalweight += m_weightsT[id][i];
+			if (robust)
+				score += robustincc(1.0 - dot(texs[0], texs[i])) * m_weightsT[id][i];
+			else
+				score += (1.0 - dot(texs[0], texs[i])) * m_weightsT[id][i];
+		}
+	}
+	if (totalweight == 0.0)
+		score = 2.0;
+	else
+		score /= totalweight;
+#endif  
+
+	return score;
+}
+void Optim::filterImagesByAngle(Patch::Cpatch& patch) {
+	std::vector<int> newindexes;
+
+	std::vector<int>::iterator bimage = patch.m_images.begin();
+	std::vector<int>::iterator eimage = patch.m_images.end();
+
+	while (bimage != eimage) {
+		const int index = *bimage;
+		Vec4f ray = m_df.getPhoto(index).m_center - patch.m_coord;
+		unitize(ray);
+		if (ray * patch.m_normal < cos(m_df.m_angleThreshold1)) {
+			// if reference image is deleted, over
+			if (bimage == patch.m_images.begin()) {
+				patch.m_images.clear();
+				return;
+			}
+		}
+		else
+			newindexes.push_back(index);
+		++bimage;
+	}
+
+	patch.m_images.swap(newindexes);
+}
+
+void Optim::setRefImage(Patch::Cpatch& patch, const int id) {
+#ifdef DEBUG
+	if (patch.m_images.empty()) {
+		cerr << "empty images" << endl;    exit(1);
+	}
+#endif
+	//----------------------------------------------------------------------
+	// Set the reference image
+	// Only for target images
+	std::vector<int> indexes;
+	std::vector<int>::const_iterator begin = patch.m_images.begin();
+	std::vector<int>::const_iterator end = patch.m_images.end();
+	while (begin != end) {
+		if (*begin < m_df.m_tnum)
+			indexes.push_back(*begin);
+		++begin;
+	}
+	// To avoid segmentation error on alley dataset. (this code is necessary because of the use of filterExact)
+	if (indexes.empty()) {
+		patch.m_images.clear();
+		return;
+	}
+
+	std::vector<std::vector<float> > inccs;
+	setINCCs(patch, inccs, indexes, id, 1);
+
+	int refindex = -1;
+	float refncc = INT_MAX / 2;
+	for (int i = 0; i < (int)indexes.size(); ++i) {
+		const float sum = accumulate(inccs[i].begin(), inccs[i].end(), 0.0f);
+		if (sum < refncc) {
+			refncc = sum;
+			refindex = i;
+		}
+	}
+	const int refIndex = indexes[refindex];
+	for (int i = 0; i < (int)patch.m_images.size(); ++i) {
+		if (patch.m_images[i] == refIndex) {
+			const int itmp = patch.m_images[0];
+			patch.m_images[0] = refIndex;
+			patch.m_images[i] = itmp;
+			break;
+		}
+	}
+}
+void Optim::setINCCs(const Patch::Cpatch& patch,
+	std::vector<std::vector<float> >& inccs,
+	const std::vector<int>& indexes,
+	const int id, const int robust) {
+
+	const int index = indexes[0];
+	Vec4f pxaxis, pyaxis;
+	getPAxes(index, patch.m_coord, patch.m_normal, pxaxis, pyaxis);
+
+	std::vector<std::vector<float> >& texs = m_texsT[id];
+
+	const int size = (int)indexes.size();
+	for (int i = 0; i < size; ++i) {
+		const int flag = grabTex(patch.m_coord, pxaxis, pyaxis, patch.m_normal,
+			indexes[i], m_df.m_wsize, texs[i]);
+
+		if (flag == 0)
+			normalize(texs[i]);
+	}
+
+	inccs.resize(size);
+	for (int i = 0; i < size; ++i)
+		inccs[i].resize(size);
+
+	for (int i = 0; i < size; ++i) {
+		inccs[i][i] = 0.0f;
+		for (int j = i + 1; j < size; ++j) {
+			if (!texs[i].empty() && !texs[j].empty()) {
+				if (robust == 0)
+					inccs[j][i] = inccs[i][j] = 1.0f - dot(texs[i], texs[j]);
+				else
+					inccs[j][i] = inccs[i][j] = robustincc(1.0f - dot(texs[i], texs[j]));
+			}
+			else
+				inccs[j][i] = inccs[i][j] = 2.0f;
+		}
+	}
+
+}
+
+int Optim::postProcess(Patch::Cpatch& patch, const int id, const int seed) {
+	if ((int)patch.m_images.size() < m_df.m_minimagenumthresho)
+		return 1;
+
+	if (/*m_fm.m_pss.getMask(patch.m_coord, m_fm.m_level) == 0 ||*/
+		m_df.insideBimages(patch.m_coord) == 0)
+		return 1;
+
+	addImages(patch);
+	constraintImages(patch,m_df.m_nccThreshold,id);
+	filterImagesByAngle(patch);
+
+	if ((int)patch.m_images.size() < m_df.m_minimagenumthresho)
+		return 1;
+
+	m_df.m_pos.setGrids(patch);
+	setRefImage(patch,id);
+	constraintImages(patch, m_df.m_nccThreshold, id);
+
+	if ((int)patch.m_images.size() < m_df.m_minimagenumthresho)
+		return 1;
+
+	m_df.m_pos.setGrids(patch);
+
+	// set m_timages
+	patch.m_timages = 0;
+	std::vector<int>::const_iterator begin = patch.m_images.begin();
+	std::vector<int>::const_iterator end = patch.m_images.end();
+	while (begin != end) {
+		if (*begin < m_df.m_tnum)
+			++patch.m_timages;
+		++begin;
+	}
+
+	patch.m_tmp = patch.score2(m_df.m_nccThreshold);
+	// Set vimages vgrids.
+
+	//TODO 3: Ovaj deo uraditi kada dodje do inicijalizacije deptha
+	/*if (m_df.m_depth) {
+		m_df.m_pos.setVImagesVGrids(patch);
+
+		if (2 <= m_fm.m_depth && check(patch))
+			return 1;
+	}*/
+	return 0;
 
 }

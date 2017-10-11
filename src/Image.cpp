@@ -184,3 +184,16 @@ void Image::buildImageByLevel(const int filter, std::vector<int> w, std::vector<
 		}
 	}
 }
+
+void Image::gray2rgb(const float gray, float& r, float& g, float& b) {
+	if (gray < 0.5) {
+		r = 0.0f;
+		g = 2.0f * gray;
+		b = 1.0f - g;
+	}
+	else {
+		r = (gray - 0.5f) * 2.0f;
+		g = 1.0f - r;
+		b = 0.0f;
+	}
+}

@@ -24,6 +24,8 @@ Vec3f Photo::project(const int index, const Vec4f& coord,
 	return Camera::project(coord,level);
 }
 
+
+
 void Photo::setDistances(int m_num,std::vector<Photo> photos) {
 	
 	m_distances.resize(m_num);
@@ -36,7 +38,7 @@ void Photo::setDistances(int m_num,std::vector<Photo> photos) {
 				m_distances[i][j] = 0.0f;
 			else {
 				const float ftmp = norm(photos[i].m_center - photos[j].m_center);
-				std::cout << "ftmp:" << ftmp << std::endl;
+				//std::cout << "ftmp:" << ftmp << std::endl;
 				m_distances[i][j] = ftmp;
 				avedis += ftmp;
 				denom++;

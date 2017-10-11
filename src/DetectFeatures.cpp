@@ -9,6 +9,7 @@
 
 DetectFeatures::DetectFeatures() :m_pos(*this),  m_seed(*this), m_optim(*this), m_exp(*this), m_filt(*this)
 {
+	m_nccThreshold = 0.7;
 }
 //
 
@@ -41,10 +42,10 @@ void DetectFeatures::run(std::string path, std::string name,
 	m_wsize = 5;
 	m_minimagenumthresho = 2;
 	m_level = readOprionFile.getLevel();
-
+	readOprionFile.m_minImageNum = 2;
 	m_points.clear();
 	m_points.resize(num);
-
+	m_tnum = readOprionFile.imgIndex.size();
 	m_tau = (std::min)(readOprionFile.m_minImageNum * 2, num);
 
 	//----------------------------------------------------------------------
@@ -64,6 +65,7 @@ void DetectFeatures::run(std::string path, std::string name,
 	std::vector<unsigned char> tempImgUCa;
 	for (int i = 0; i < num;i++) {
 		cv::Mat tempImg = cv::imread(pathToF+namesOfFile[i]);
+		cv::cvtColor(tempImg, tempImg, CV_BGR2RGB);
 		cv::Mat tempMask = cv::Mat::zeros(tempImg.size(), tempImg.type());
 		cv::Mat tempedge = cv::Mat::zeros(tempImg.size(), tempImg.type());
 		
@@ -103,22 +105,11 @@ void DetectFeatures::run(std::string path, std::string name,
 	//----------------------------------- calculate Camera parametras 
 	Photo photo(num);
 	for (int i = 0; i < num;i++) {
+		std::string nameOfTxtFile = readOprionFile.setTxtFileName(nameOfimages[i]);
 		std::string namePath;
-		std::string tempN;
-		if (i<10) {
-			tempN = "00" + std::to_string(i) + ".txt";
-		}
-		else if (i>=10 && i<100) {
-			tempN = "0" + std::to_string(i) + ".txt";
-		}
-		else
-		{
-			tempN = std::to_string(i) + ".txt";
-		}
 
-		namePath = readOprionFile.getPathToTxt() + tempN;
+		namePath = readOprionFile.getPathToTxt() + nameOfTxtFile;
 
-		
 		photo.init(namePath,3);
 		photos.push_back(photo);
 	}
@@ -150,7 +141,7 @@ void DetectFeatures::run(std::string path, std::string name,
 
 	m_neighborThreshold2 = 1.0f;
 
-	m_maxAngleThreshold = 10;
+	m_maxAngleThreshold = 10 * M_PI/180.0f;
 
 	m_nccThresholdBefore = m_nccThreshold - 0.3f;
 
@@ -158,7 +149,7 @@ void DetectFeatures::run(std::string path, std::string name,
 
 	m_epThreshold = 2.0f;
 	m_sequenceThreshold = -1;
-
+	m_depth = 0;
 
 }
 //
@@ -172,7 +163,12 @@ void DetectFeatures::run(std::string path, std::string name,
 //	return i;
 //}
 
+void DetectFeatures::updateThreshold(void) {
+	m_nccThreshold -= 0.05f;
+	m_nccThresholdBefore -= 0.05f;
 
+	m_countThreshold1 = 2;
+}
 
 
 void DetectFeatures::RunFetureDetect(void) {
@@ -332,10 +328,23 @@ int DetectFeatures::checkAngles(const Vec4f& coord,
 		return 0;
 }
 
-
+int DetectFeatures::insideBimages(const Vec4f& coord) {
+	for (int i = 0; i < (int)m_bindexes.size(); ++i) {
+		 int index = m_bindexes[i];
+		 Vec3f icoord = getPhoto(index).project(index, coord, m_level);
+		if (icoord[0] < 0.0 || getWidtByIndex(index, m_level) - 1 < icoord[0] ||
+			icoord[1] < 0.0 || getHeightByIndex(index, m_level) - 1 < icoord[1])
+			return 0;
+	}
+	return 1;
+}
+void DetectFeatures::write(const std::string prefix, bool bExportPLY, bool bExportPatch, bool bExportPSet) {
+	m_pos.writePatches2(prefix, bExportPLY, bExportPatch, bExportPSet);
+}
 void DetectFeatures::runMatching() {
 
 	m_seed.run();
+	this->write("Test1",true,false,false);
 	//m_seed.clear();
 
 }

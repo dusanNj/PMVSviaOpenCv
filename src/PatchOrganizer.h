@@ -3,6 +3,7 @@
 #define _PATCH_ORGANIZER_
 #include"Detector.h"
 #include"patch.h"
+#include<queue>
 class DetectFeatures;
 
 class PatchOrganizer
@@ -27,7 +28,12 @@ public:
 		return m_gwidths[index];
 	}
 	void setScales(Patch::Cpatch& patch) const;
-
+	void setGrids(Patch::Cpatch& patch) const;
+	void addPatch(Patch::Ppatch& ppatch);
+	void writePatches2(const std::string prefix, bool bExportPLY, bool bExportPatch, bool bExportPSet);
+	void collectPatches(const int target = 0);
+	void writePLY(const std::vector<Patch::Ppatch>& patches,
+		const std::string filename);
 	DetectFeatures& m_df;
 	// image, grid
 	std::vector<std::vector<std::vector<Patch::Ppatch> > > m_pgrids;

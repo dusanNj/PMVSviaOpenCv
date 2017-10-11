@@ -26,6 +26,8 @@ private:
 public:
 	int imgs;
 	int m_minImageNum;
+	std::vector<int> m_bindexes;
+	int m_useBound;
 	//int txts;
 
 	std::vector<int> imgIndex; // U pmvs-u je ovo m_timages
@@ -34,7 +36,7 @@ public:
 	std::vector<std::vector<int> > m_visdatatemp;
 	std::vector<std::vector<int> > m_visdata2temp;
 	//std::vector<int> txtIndex;
-
+	std::string setTxtFileName(std::string nameInput);
 	Organizer(std::string path, std::string name);
 	~Organizer();
 	//setMetode

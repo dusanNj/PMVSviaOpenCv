@@ -45,6 +45,7 @@ public:
 				tempVecW.clear();
 				tempVecH.clear();
 	}
+	void gray2rgb(const float gray, float& r, float& g, float& b);
 protected:
 	std::vector<unsigned char>  m_images;
 

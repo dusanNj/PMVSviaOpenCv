@@ -17,7 +17,7 @@ void Seed::init(const std::vector<std::vector<Cpoint> >& points) {
 	
 	for (int index = 0; index < m_df.getNumOfImages(); ++index) {
 		const int gheight = m_df.m_pos.getmgHeights(index);
-		std::cout << "w:" << gheight << std::endl;
+		//std::cout << "w:" << gheight << std::endl;
 		const int gwidth = m_df.m_pos.getmgWidths(index);
 		m_ppoints[index].resize(gwidth * gheight);
 	}
@@ -41,12 +41,14 @@ void Seed::readPoints(const std::vector<std::vector<Cpoint> >& points) {
 void Seed::run() {
 	m_df.m_count = 0;
 	m_df.m_jobs.clear();
-	m_scounts.resize(2);
-	m_fcounts0.resize(2);
-
+	m_scounts.resize(1);
+	m_fcounts0.resize(1);
+	m_fcounts1.resize(1);
+	m_pcounts.resize(1);
 	fill(m_scounts.begin(), m_scounts.end(), 0);
 	fill(m_fcounts0.begin(), m_fcounts0.end(), 0);
-
+	fill(m_fcounts1.begin(), m_fcounts1.end(), 0);
+	fill(m_pcounts.begin(), m_pcounts.end(), 0);
 
 	std::vector<int> vitmp;
 	for (int i = 0; i <  m_df.getNumOfImages(); ++i)
@@ -67,15 +69,33 @@ void Seed::run() {
 		}
 	}
 	initialMatchT();
+
+	//----------------------------------------------------------------------
+	std::cerr << "done" << std::endl;
+	//cerr << "---- Initial: " << (tv - curtime) / CLOCKS_PER_SEC << " secs ----" << endl;
+
+	const int trial = accumulate(m_scounts.begin(), m_scounts.end(), 0);
+	const int fail0 = accumulate(m_fcounts0.begin(), m_fcounts0.end(), 0);
+	const int fail1 = accumulate(m_fcounts1.begin(), m_fcounts1.end(), 0);
+	const int pass = accumulate(m_pcounts.begin(), m_pcounts.end(), 0);
+	std::cerr << "Total pass fail0 fail1 refinepatch: "
+		<< trial << ' ' << pass << ' '
+		<< fail0 << ' ' << fail1 << ' ' << pass + fail1 << std::endl;
+	std::cerr << "Total pass fail0 fail1 refinepatch: "
+		<< 100 * trial / (float)trial << ' '
+		<< 100 * pass / (float)trial << ' '
+		<< 100 * fail0 / (float)trial << ' '
+		<< 100 * fail1 / (float)trial << ' '
+		<< 100 * (pass + fail1) / (float)trial << std::endl;
 }
 
 void Seed::initialMatchT(void) {
 
-	int id = m_df.m_count++;
-	std::list<int> tempL;
-	for (int i=0; i<=1;i++)
-	{
-		int id2 = i;
+	int id = 0;//m_df.m_count++;
+	//std::list<int> tempL;
+	//for (int i=0; i<=1;i++)
+	//{
+	//	int id2 = i;
 		while (1)
 		{
 			//const int id = m_df.m_count++;
@@ -83,15 +103,15 @@ void Seed::initialMatchT(void) {
 			if (!m_df.m_jobs.empty()) {
 				index = m_df.m_jobs.front();
 				m_df.m_jobs.pop_front();
-				tempL.push_front(index);
+				//tempL.push_front(index);
 			}
 			if (index == -1) {
-				m_df.m_jobs = tempL;
+				//m_df.m_jobs = tempL;
 				break;
 			}
-			initialMatch(index, id2);
+			initialMatch(index, id);
 		}
-	}
+	//}
 	UtilityM ut;
 	ut.WritePlySimple("D:/DUSAN/3Lateral/PMVSviaOpenCV/vc++/vc++/test.ply",temp3Dpoint);
 }
@@ -198,9 +218,9 @@ void Seed::collectCandidates(const int index, const std::vector<int>& indexes,
 			vcp[i]->m_coord <= 0.0)
 			continue;
 		//TODO 1: ovaj deo uraditi kada budemo ubacivali maske
-		/*if (m_df.getMask(vcp[i]->m_coord, m_df.getmLevel()) == 0 ||
+		if (/*m_df.getMask(vcp[i]->m_coord, m_df.getmLevel()) == 0 ||*/
 			m_df.insideBimages(vcp[i]->m_coord) == 0)
-			continue;*/
+			continue;
 
 		//??? from the closest
 		vcp[i]->m_response =
@@ -209,7 +229,8 @@ void Seed::collectCandidates(const int index, const std::vector<int>& indexes,
 
 		vcptmp.push_back(vcp[i]);
 	}
-
+	vcptmp.swap(vcp);
+	sort(vcp.begin(), vcp.end());
 }
 
 void Seed::unproject(const int index0, const int index1,
@@ -286,12 +307,12 @@ void Seed::unproject(const int index0, const int index1,
 		coord[y] = ans[y];
 	coord[3] = 1.0f;
 }
-
+using namespace Patch;
 void Seed::initialMatch(const int index, const int id) {
 	std::vector<int> indexes;
 	m_df.m_optim.collectImages(index, indexes);
-	//TODO: zameniti sa m_df.tm_tao-broj slika koje ucestvuju u optimizaciji
-	if (m_df.getNumOfImages() < (int)indexes.size())
+
+	if (m_df.m_tau < (int)indexes.size())
 		indexes.resize(m_df.getNumOfImages());
 
 	if (indexes.empty())
@@ -349,22 +370,20 @@ void Seed::initialMatch(const int index, const int id) {
 								if (m_df.m_countThreshold0 <= count)
 									break;
 							}
-				//		}
-						//if (count != 0) {
-						//	Ppatch ppatch(new Cpatch(bestpatch));
-						//	m_df.m_pos.addPatch(ppatch);
-						//	++totalcount;
-						//	break;
-						//}
-				//	}
+						}
+						if (count != 0) {
+							Ppatch ppatch(new Cpatch(bestpatch));
+							m_df.m_pos.addPatch(ppatch);
+							++totalcount;
+							break;
+						}
+					}
 				}
-			}
-			if (!vcptemp1.empty()) {
-				temp3Dpoint.push_back(vcptemp1);
-				//temp3DpointB.insert(temp3DpointB.end(), vcptemp1[0]);
-				vcptemp1.clear();
-			}
-		}
+			//if (!vcptemp1.empty()) {
+			//	temp3Dpoint.push_back(vcptemp1);
+			//	//temp3DpointB.insert(temp3DpointB.end(), vcptemp1[0]);
+			//	vcptemp1.clear();
+			//}
 	}
 	std::cerr << '(' << index << ',' << totalcount << ')' << std::flush;
 }
@@ -376,9 +395,9 @@ int Seed::initialMatchSub(const int index0, const int index1,
 	patch.m_images.clear();
 	patch.m_images.push_back(index0);
 	patch.m_images.push_back(index1);
-	if (id > 1) {
-		std::cerr << "id veci od 1" << std::endl;
-	}
+	//if (id > 1) {
+	//	std::cerr << "id veci od 1" << std::endl;
+	//}
 	++m_scounts[id];
 
 	//----------------------------------------------------------------------
@@ -389,15 +408,15 @@ int Seed::initialMatchSub(const int index0, const int index1,
 	}
 
 	//----------------------------------------------------------------------  
-	//m_df.m_optim.refinePatch(patch, id, 100);
+	m_df.m_optim.refinePatch(patch, id, 100);
 
 	////----------------------------------------------------------------------
-	//if (m_df.m_optim.postProcess(patch, id, 1)) {
-	//	++m_fcounts1[id];
-	//	return 1;
-	//}
+	if (m_df.m_optim.postProcess(patch, id, 1)) {
+		++m_fcounts1[id];
+		return 1;
+	}
 
-	//++m_pcounts[id];
+	++m_pcounts[id];
 	//----------------------------------------------------------------------
 	return 0;
 }

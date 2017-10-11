@@ -44,8 +44,8 @@ public:
 
 	void RunFetureDetect(void);
 	//int countImageIndex(void);
-
-
+	int insideBimages(const Vec4f& coord);
+	void write(const std::string prefix, bool bExportPLY, bool bExportPatch, bool bExportPSet);
 	std::vector<std::vector<Cpoint> > m_points;
 
 	int getNumOfImages() {
@@ -71,8 +71,14 @@ public:
 	Photo getPhoto(int index) {
 		return photos[index];
 	}
+	void updateThreshold(void);
+	Vec3f getColor(const Vec4f& coord, const int index,
+		const int level) {
 
+		Vec3f icoord = getPhoto(index).project(index,coord, level);//Camera::project(coord, level);
+		return getColor(index, icoord[0], icoord[1], level);
 
+	};
 	//std::vector<int> getm_width(int index) {
 	//	return imgWidth[index];
 	//}
@@ -95,11 +101,18 @@ public:
 
 	void runMatching();
 	int getMask(int index,int x, int y, int level);
+	//targetImages
+	std::vector<int> m_timages;
+	// num of target images
+	int m_tnum;
+	// num of total images
+	int m_num;
 	// For first feature matching. Images within this angle are used in
 	// matching.
-	float m_nccThreshold = 0.7;
+	float m_nccThreshold;
 	float m_quadThreshold;
-
+	// bounding images
+	std::vector<int> m_bindexes;
 	float m_angleThreshold0;
 	// tigher angle
 	float m_angleThreshold1;
@@ -127,6 +140,8 @@ public:
 	// visibility consistency threshold
 	float m_visibleThreshold;
 	float m_visibleThresholdLoose;
+	// mininum image num threshold
+	//int m_minImageNumThreshold;
 
 	// Epipolar distance in seed generation
 	float m_epThreshold;
@@ -139,10 +154,12 @@ public:
 	// Maximum number of images used in the optimization
 	int m_tau;
 	int m_wsize;
+	// mininum image num threshold
 	int m_minimagenumthresho;
+	// If patches are dense or not, that is, if we use check(patch) after patch optimization
+	int m_depth;
 	//TODO:6a getMask za canADdd
 	//int getMask(int index, int x, int y, int level);
-	//TODO1
 	//int getMask2(const Vec4f& coord, const int level) const {
 	//	for (int index = 0; index < m_num; ++index)
 	//		if (getMask(coord, index, level) == 0)

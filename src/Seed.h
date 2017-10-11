@@ -44,6 +44,10 @@ public:
 	std::vector<Ppoint> temp3DpointB;
 	// Number of failures in the prep
 	std::vector<int> m_fcounts0;
+	// Number of failures in the post processing
+	std::vector<int> m_fcounts1;
+	// Number passes
+	std::vector<int> m_pcounts;
 
 protected:
 

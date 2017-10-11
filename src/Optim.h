@@ -16,6 +16,7 @@ public:
 	void setAxesScales(void);
 	void collectImages(const int index, std::vector<int>& indexes) const;
 	int preProcess(Patch::Cpatch& patch, const int id, const int seed);
+	int postProcess(Patch::Cpatch& patch, const int id, const int seed);
 	void addImages(Patch::Cpatch& patch) const;
 	void constraintImages(Patch::Cpatch& patch, const float nccThreshold,
 		const int id);
@@ -59,6 +60,29 @@ public:
 	void encode(const Vec4f& coord,
 		double* const vect, const int id) const;
 	static double my_f(unsigned n, const double *x, double *grad, void *my_func_data);
+	void refinePatch(Patch::Cpatch& patch, const int id,const int time);
+	void decode(Vec4f& coord, Vec4f& normal,const double* const vect, const int id) const;
+	void decode(Vec4f& coord, const double* const vect, const int id) const;
+	double computeINCC(const Vec4f& coord, const Vec4f& normal,
+		const std::vector<int>& indexes, const int id,
+		const int robust);
+	double computeINCC(const Vec4f& coord, const Vec4f& normal,
+		const std::vector<int>& indexes, const Vec4f& pxaxis,
+		const Vec4f& pyaxis, const int id,
+		const int robust);
+
+
+	static inline float unrobustincc(const float rhs) {
+		return rhs / (1 - 3 * rhs);
+	}
+
+	void filterImagesByAngle(Patch::Cpatch& patch);
+	void setRefImage(Patch::Cpatch& patch, const int id);
+	void setINCCs(const Patch::Cpatch& patch,
+		std::vector<std::vector<float> >& inccs,
+		const std::vector<int>& indexes,
+		const int id, const int robust);
+
 	// Grabbed texture
 	std::vector<std::vector<std::vector<float> > > m_texsT; // last is 7x7x3 patch
 
