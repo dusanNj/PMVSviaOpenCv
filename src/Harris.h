@@ -25,7 +25,7 @@ public:
 		const int width, const int height,
 		const int gspeedup, const float sigma,
 		std::vector<cv::Point2f>& cornerPos,
-		std::multiset<Cpoint> & result);
+		std::multiset<Cpoint> & result, int level);
 
 	void init(const std::vector<unsigned char>& image,
 		const std::vector<unsigned char>& mask,

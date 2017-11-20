@@ -163,7 +163,7 @@ void Dog::run(std::vector<std::vector<unsigned char>>& image,
 	const float firstScale,   // 1.4f
 	const float lastScale,    // 4.0f
 	std::multiset<Cpoint> & result,
-	std::vector<cv::Point2f>& dogCorners) {
+	std::vector<cv::Point2f>& dogCorners, int level) {
 
 
 
@@ -175,7 +175,7 @@ void Dog::run(std::vector<std::vector<unsigned char>>& image,
 	m_firstScale = firstScale;
 	m_lastScale = lastScale;
 
-	init(image[0], mask, edge);
+	init(image[level], mask, edge);
 
 	const int factor = 2;
 	const int maxPointsGrid = factor * factor;

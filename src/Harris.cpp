@@ -194,7 +194,7 @@ void Harris::run( std::vector<std::vector<unsigned char>>& image,
 	const int width, const int height,
 	const int gspeedup, const float sigma,
 	std::vector<cv::Point2f>& cornerPos,
-	std::multiset<Cpoint>& result) {
+	std::multiset<Cpoint>& result, int level) {
 
 	//for (int i = 0; i < image.size();i++) {
 
@@ -203,7 +203,7 @@ void Harris::run( std::vector<std::vector<unsigned char>>& image,
 	m_width = width;       m_height = height;
 	m_sigmaD = sigma;      m_sigmaI = sigma;
 	
-	init(image[0], mask, edge);
+	init(image[level], mask, edge);
 	setDerivatives();  setResponse(); 
 
 

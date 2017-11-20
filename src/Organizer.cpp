@@ -75,6 +75,15 @@ void Organizer::init() {
 		else if (name == "m_minImageNum") {
 			ifstr >> m_minImageNum;
 		}
+		else if (name == "useBound") {
+			ifstr >> m_useBound;
+			if (m_useBound == 0) {
+				m_bindexes.resize(m_useBound);
+			}
+			/*else {
+				initBindexes();
+			}*/
+		}
 	}
 }
 
@@ -214,3 +223,19 @@ void Organizer::initVisdata2(void) {
 //		}
 //	}
 //}
+
+std::string Organizer::setTxtFileName(std::string nameInput) {
+
+	std::string nameOfImage = nameInput;
+	std::string txtFileName;
+	std::string point = ".";
+	int cont = 0;
+	for (int i = 0; i < nameOfImage.length();i++) {
+		if (nameOfImage.at(i) == point.at(0)) {
+			txtFileName = nameOfImage.substr(0, i);
+			txtFileName += ".txt";
+			break;
+		}
+	}
+	return txtFileName;
+}

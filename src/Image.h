@@ -20,15 +20,15 @@ public:
 	~Image();
 
 	void buildImage(const int filter, int w, int h, std::vector<unsigned char>& img);
-	void buildImageByLevel(const int filter, std::vector<int> w, std::vector<int> h, std::vector<std::vector<unsigned char>>& img);
+	void buildImageByLevel(const int filter, std::vector<int> w, std::vector<int> h, std::vector<std::vector<unsigned char>>& img, int maxLevel);
 
 	void setWidthHeightByLevel(cv::Mat im, std::vector<std::vector<int>>& withLevel, 
-								std::vector<std::vector<int>>& heightLevel) {
+								std::vector<std::vector<int>>& heightLevel, int level, int maxLevel) {
 		std::vector<int> tempVecW;
 		std::vector<int> tempVecH;
 			int wtemp, htemp;
 			
-				for (int j = 0; j < 3; j++) {
+				for (int j = 0; j < maxLevel; j++) {
 					if (j==0) {
 						tempVecW.push_back(im.cols);
 						tempVecH.push_back(im.rows);
@@ -45,6 +45,7 @@ public:
 				tempVecW.clear();
 				tempVecH.clear();
 	}
+	void gray2rgb(const float gray, float& r, float& g, float& b);
 protected:
 	std::vector<unsigned char>  m_images;
 

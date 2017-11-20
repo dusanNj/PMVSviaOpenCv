@@ -9,6 +9,7 @@
 
 DetectFeatures::DetectFeatures() :m_pos(*this),  m_seed(*this), m_optim(*this), m_exp(*this), m_filt(*this)
 {
+	m_nccThreshold = 0.7;
 }
 //
 
@@ -22,6 +23,8 @@ void DetectFeatures::run(std::string path, std::string name,
 	Organizer readOprionFile(path,name);
 	readOprionFile.init();
 	std::vector<std::string> namesOfFile;
+	std::string s = readOprionFile.getPathTofolder();
+	std::string nm = readOprionFile.getExtension();
 	readOprionFile.getFileFormDirectory(readOprionFile.getPathTofolder(),
 										readOprionFile.getExtension(),namesOfFile);
 	readOprionFile.initVisdata();
@@ -38,11 +41,14 @@ void DetectFeatures::run(std::string path, std::string name,
 	m_visdata2 = readOprionFile.m_visdata2temp;
 
 	m_csize = csize;
+	m_wsize = 5;
+	m_minimagenumthresho = 2;
 	m_level = readOprionFile.getLevel();
-
+	setMaxLevel(m_level);
+	readOprionFile.m_minImageNum = 2;
 	m_points.clear();
 	m_points.resize(num);
-
+	m_tnum = readOprionFile.imgIndex.size();
 	m_tau = (std::min)(readOprionFile.m_minImageNum * 2, num);
 
 	//----------------------------------------------------------------------
@@ -62,6 +68,7 @@ void DetectFeatures::run(std::string path, std::string name,
 	std::vector<unsigned char> tempImgUCa;
 	for (int i = 0; i < num;i++) {
 		cv::Mat tempImg = cv::imread(pathToF+namesOfFile[i]);
+		cv::cvtColor(tempImg, tempImg, CV_BGR2RGB);
 		cv::Mat tempMask = cv::Mat::zeros(tempImg.size(), tempImg.type());
 		cv::Mat tempedge = cv::Mat::zeros(tempImg.size(), tempImg.type());
 		
@@ -85,7 +92,7 @@ void DetectFeatures::run(std::string path, std::string name,
 		tempMask.release();
 		tempedge.release();
 
-		img.setWidthHeightByLevel(tempImg, imgWidth, imgHeight);
+		img.setWidthHeightByLevel(tempImg, imgWidth, imgHeight,m_level,getMaxLevel());
 
 		tempImg.release();
 		temp.release();
@@ -93,7 +100,7 @@ void DetectFeatures::run(std::string path, std::string name,
 
 	std::vector<std::vector<unsigned char>> tempL;
 	for (int i = 0; i < num;i++) {
-		img.buildImageByLevel(0, imgWidth[i], imgHeight[i], alImgChar[i]);
+		img.buildImageByLevel(0, imgWidth[i], imgHeight[i], alImgChar[i], getMaxLevel());
 	}
 
 	//----------------------- Finish Create image level
@@ -101,23 +108,12 @@ void DetectFeatures::run(std::string path, std::string name,
 	//----------------------------------- calculate Camera parametras 
 	Photo photo(num);
 	for (int i = 0; i < num;i++) {
+		std::string nameOfTxtFile = readOprionFile.setTxtFileName(nameOfimages[i]);
 		std::string namePath;
-		std::string tempN;
-		if (i<10) {
-			tempN = "00" + std::to_string(i) + ".txt";
-		}
-		else if (i>=10 && i<100) {
-			tempN = "0" + std::to_string(i) + ".txt";
-		}
-		else
-		{
-			tempN = std::to_string(i) + ".txt";
-		}
 
-		namePath = readOprionFile.getPathToTxt() + tempN;
+		namePath = readOprionFile.getPathToTxt() + nameOfTxtFile;
 
-		
-		photo.init(namePath,3);
+		photo.init(namePath,getMaxLevel());
 		photos.push_back(photo);
 	}
 	//----------------------------------- Finish calculate Camera parametras 
@@ -148,7 +144,7 @@ void DetectFeatures::run(std::string path, std::string name,
 
 	m_neighborThreshold2 = 1.0f;
 
-	m_maxAngleThreshold = 10;
+	m_maxAngleThreshold = 10 * M_PI/180.0f;
 
 	m_nccThresholdBefore = m_nccThreshold - 0.3f;
 
@@ -156,7 +152,7 @@ void DetectFeatures::run(std::string path, std::string name,
 
 	m_epThreshold = 2.0f;
 	m_sequenceThreshold = -1;
-
+	m_depth = 0;
 
 }
 //
@@ -170,7 +166,12 @@ void DetectFeatures::run(std::string path, std::string name,
 //	return i;
 //}
 
+void DetectFeatures::updateThreshold(void) {
+	m_nccThreshold -= 0.05f;
+	m_nccThresholdBefore -= 0.05f;
 
+	m_countThreshold1 = 2;
+}
 
 
 void DetectFeatures::RunFetureDetect(void) {
@@ -196,7 +197,7 @@ void DetectFeatures::RunFetureDetect(void) {
 		int fcsize = 16;
 		std::vector<cv::Point2f> cornPosition;
 		harris.run(alImgChar[cn], masksChar[0], edgesChar[0],
-			imgWidth[cn][0], imgHeight[cn][0], fcsize, sigma, cornPosition, result);
+			imgWidth[cn][m_level], imgHeight[cn][m_level], fcsize, sigma, cornPosition, result, m_level);
 
 		std::multiset<Cpoint>::reverse_iterator rbegin = result.rbegin();
 
@@ -220,7 +221,7 @@ void DetectFeatures::RunFetureDetect(void) {
 		std::vector<cv::Point2f> cornPositionDog;
 
 		dog.run(alImgChar[cn], maskDogchar[0], edgeDogchar[0],
-			imgWidth[cn][0], imgHeight[cn][0], fcsize, firstScale, lastScale, resultD, cornPositionDog);
+			imgWidth[cn][m_level], imgHeight[cn][m_level], fcsize, firstScale, lastScale, resultD, cornPositionDog, m_level);
 
 		std::multiset<Cpoint>::reverse_iterator rbeginD = resultD.rbegin();
 		while (rbeginD != resultD.rend()) {
@@ -252,10 +253,101 @@ int DetectFeatures::getMask(int index1,int x, int y, int level) {
 	return masksChar[level][index1];
 }
 //================================================
+Vec3f DetectFeatures::getColor(const int indexIm, const float x, const float y,
+	const int level) const {
 
+	// Bilinear cases
+	const int lx = static_cast<int>(x);
+	const int ly = static_cast<int>(y);
+	const int index = 3 * (ly * imgWidth[indexIm][level] + lx);
+
+	const float dx1 = x - lx;  const float dx0 = 1.0f - dx1;
+	const float dy1 = y - ly;  const float dy0 = 1.0f - dy1;
+
+	const float f00 = dx0 * dy0;  const float f01 = dx0 * dy1;
+	const float f10 = dx1 * dy0;  const float f11 = dx1 * dy1;
+	const int index2 = index + 3 * imgWidth[indexIm][level];
+
+#ifdef IMAGE_GAMMA
+	const float* fp0 = &m_dimages[level][index] - 1;
+	const float* fp1 = &m_dimages[level][index2] - 1;
+	float r = 0.0f;  float g = 0.0f;  float b = 0.0f;
+	r += *(++fp0) * f00 + *(++fp1) * f01;
+	g += *(++fp0) * f00 + *(++fp1) * f01;
+	b += *(++fp0) * f00 + *(++fp1) * f01;
+	r += *(++fp0) * f10 + *(++fp1) * f11;
+	g += *(++fp0) * f10 + *(++fp1) * f11;
+	b += *(++fp0) * f10 + *(++fp1) * f11;
+	return Vec3f(r, g, b);
+	/*
+	return Vec3f(m_dimages[level][index] * f00 + m_dimages[level][index + 3] * f10 +
+	m_dimages[level][index2] * f01 + m_dimages[level][index2 + 3] * f11,
+	m_dimages[level][index + 1] * f00 + m_dimages[level][index + 4] * f10 +
+	m_dimages[level][index2 + 1] * f01 + m_dimages[level][index2 + 4] * f11,
+	m_dimages[level][index + 2] * f00 + m_dimages[level][index + 5] * f10 +
+	m_dimages[level][index2 + 2] * f01 + m_dimages[level][index2 + 5] * f11);
+	*/
+#else
+	const unsigned char* ucp0 = &alImgChar[indexIm][level][index] - 1;
+	const unsigned char* ucp1 = &alImgChar[indexIm][level][index2] - 1;
+	float r = 0.0f;  float g = 0.0f;  float b = 0.0f;
+	r += *(++ucp0) * f00 + *(++ucp1) * f01;
+	g += *(++ucp0) * f00 + *(++ucp1) * f01;
+	b += *(++ucp0) * f00 + *(++ucp1) * f01;
+	r += *(++ucp0) * f10 + *(++ucp1) * f11;
+	g += *(++ucp0) * f10 + *(++ucp1) * f11;
+	b += *(++ucp0) * f10 + *(++ucp1) * f11;
+	return Vec3f(r, g, b);
+#endif
+
+}
+
+int DetectFeatures::checkAngles(const Vec4f& coord,
+	const std::vector<int>& indexes,
+	const float minAngle, const float maxAngle,
+	const int num) const {
+	int count = 0;
+
+	std::vector<Vec4f> rays;  rays.resize((int)indexes.size());
+	for (int i = 0; i < (int)indexes.size(); ++i) {
+		const int index = indexes[i];
+		rays[i] = photos[index].m_center - coord;
+		unitize(rays[i]);
+	}
+
+	for (int i = 0; i < (int)indexes.size(); ++i) {
+		for (int j = i + 1; j < (int)indexes.size(); ++j) {
+			const float dot = (std::max)(-1.0f, (std::min)(1.0f, rays[i] * rays[j]));
+			const float angle = acos(dot);
+			if (minAngle < angle && angle < maxAngle)
+				++count;
+		}
+	}
+
+	//if (count < num * (num - 1) / 2)
+	if (count < 1)
+		return 1;
+	else
+		return 0;
+}
+
+int DetectFeatures::insideBimages(const Vec4f& coord) {
+	for (int i = 0; i < (int)m_bindexes.size(); ++i) {
+		 int index = m_bindexes[i];
+		 Vec3f icoord = getPhoto(index).project(index, coord, m_level);
+		if (icoord[0] < 0.0 || getWidtByIndex(index, m_level) - 1 < icoord[0] ||
+			icoord[1] < 0.0 || getHeightByIndex(index, m_level) - 1 < icoord[1])
+			return 0;
+	}
+	return 1;
+}
+void DetectFeatures::write(const std::string prefix, bool bExportPLY, bool bExportPatch, bool bExportPSet) {
+	m_pos.writePatches2(prefix, bExportPLY, bExportPatch, bExportPSet);
+}
 void DetectFeatures::runMatching() {
 
 	m_seed.run();
+	this->write("Test1",true,false,false);
 	//m_seed.clear();
 
 }

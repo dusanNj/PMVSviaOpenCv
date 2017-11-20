@@ -17,7 +17,7 @@ void Seed::init(const std::vector<std::vector<Cpoint> >& points) {
 	
 	for (int index = 0; index < m_df.getNumOfImages(); ++index) {
 		const int gheight = m_df.m_pos.getmgHeights(index);
-		std::cout << "w:" << gheight << std::endl;
+		//std::cout << "w:" << gheight << std::endl;
 		const int gwidth = m_df.m_pos.getmgWidths(index);
 		m_ppoints[index].resize(gwidth * gheight);
 	}
@@ -41,13 +41,18 @@ void Seed::readPoints(const std::vector<std::vector<Cpoint> >& points) {
 void Seed::run() {
 	m_df.m_count = 0;
 	m_df.m_jobs.clear();
+	m_scounts.resize(1);
+	m_fcounts0.resize(1);
+	m_fcounts1.resize(1);
+	m_pcounts.resize(1);
+	fill(m_scounts.begin(), m_scounts.end(), 0);
+	fill(m_fcounts0.begin(), m_fcounts0.end(), 0);
+	fill(m_fcounts1.begin(), m_fcounts1.end(), 0);
+	fill(m_pcounts.begin(), m_pcounts.end(), 0);
 
 	std::vector<int> vitmp;
 	for (int i = 0; i <  m_df.getNumOfImages(); ++i)
 		vitmp.push_back(i);
-	//for (int i = 0; i < m_df.getNumOfImages();i++) {
-	//	m_df.m_jobs.insert(m_df.m_jobs.end(), vitmp.begin(),vitmp.end());
-	//}
 
 	random_shuffle(vitmp.begin(), vitmp.end());
 	m_df.m_jobs.insert(m_df.m_jobs.end(), vitmp.begin(), vitmp.end());
@@ -63,19 +68,34 @@ void Seed::run() {
 				m_df.m_pos.m_counts[index][j] = m_df.m_countThreshold2;
 		}
 	}
-
 	initialMatchT();
 
+	//----------------------------------------------------------------------
+	std::cerr << "done" << std::endl;
+	//cerr << "---- Initial: " << (tv - curtime) / CLOCKS_PER_SEC << " secs ----" << endl;
 
+	const int trial = accumulate(m_scounts.begin(), m_scounts.end(), 0);
+	const int fail0 = accumulate(m_fcounts0.begin(), m_fcounts0.end(), 0);
+	const int fail1 = accumulate(m_fcounts1.begin(), m_fcounts1.end(), 0);
+	const int pass = accumulate(m_pcounts.begin(), m_pcounts.end(), 0);
+	std::cerr << "Total pass fail0 fail1 refinepatch: "
+		<< trial << ' ' << pass << ' '
+		<< fail0 << ' ' << fail1 << ' ' << pass + fail1 << std::endl;
+	std::cerr << "Total pass fail0 fail1 refinepatch: "
+		<< 100 * trial / (float)trial << ' '
+		<< 100 * pass / (float)trial << ' '
+		<< 100 * fail0 / (float)trial << ' '
+		<< 100 * fail1 / (float)trial << ' '
+		<< 100 * (pass + fail1) / (float)trial << std::endl;
 }
 
 void Seed::initialMatchT(void) {
 
-	int id = m_df.m_count++;
-	std::list<int> tempL;
-	for (int i=0; i<=1;i++)
-	{
-		int id2 = i;
+	int id = 0;//m_df.m_count++;
+	//std::list<int> tempL;
+	//for (int i=0; i<=1;i++)
+	//{
+	//	int id2 = i;
 		while (1)
 		{
 			//const int id = m_df.m_count++;
@@ -83,18 +103,15 @@ void Seed::initialMatchT(void) {
 			if (!m_df.m_jobs.empty()) {
 				index = m_df.m_jobs.front();
 				m_df.m_jobs.pop_front();
-				tempL.push_front(index);
+				//tempL.push_front(index);
 			}
 			if (index == -1) {
-				m_df.m_jobs = tempL;
+				//m_df.m_jobs = tempL;
 				break;
 			}
-
-			initialMatch(index, id2);
-
+			initialMatch(index, id);
 		}
-	}
-
+	//}
 	UtilityM ut;
 	ut.WritePlySimple("D:/DUSAN/3Lateral/PMVSviaOpenCV/vc++/vc++/test.ply",temp3Dpoint);
 }
@@ -105,10 +122,7 @@ void Seed::collectCells(const int index0, const int index1,
 	Vec3 point(p0.m_icoord[0], p0.m_icoord[1], p0.m_icoord[2]);
 	const int gwidth = m_df.m_pos.getmgWidths(index1);
 	const int gheight = m_df.m_pos.getmgHeights(index1);
-	/*Mat3 F;
-	Image::setF(m_df.m_pss.m_photos[index0], m_df.m_pss.m_photos[index1],
-		F, m_df.getmLevel());*/
-	
+
 	Mat3 F;
 	UtilityM ut;
 	ut.setF(m_df.getPhoto(index0), m_df.getPhoto(index1),F,m_df.getmLevel());
@@ -204,9 +218,9 @@ void Seed::collectCandidates(const int index, const std::vector<int>& indexes,
 			vcp[i]->m_coord <= 0.0)
 			continue;
 		//TODO 1: ovaj deo uraditi kada budemo ubacivali maske
-		/*if (m_df.getMask(vcp[i]->m_coord, m_df.getmLevel()) == 0 ||
+		if (/*m_df.getMask(vcp[i]->m_coord, m_df.getmLevel()) == 0 ||*/
 			m_df.insideBimages(vcp[i]->m_coord) == 0)
-			continue;*/
+			continue;
 
 		//??? from the closest
 		vcp[i]->m_response =
@@ -215,7 +229,8 @@ void Seed::collectCandidates(const int index, const std::vector<int>& indexes,
 
 		vcptmp.push_back(vcp[i]);
 	}
-
+	vcptmp.swap(vcp);
+	sort(vcp.begin(), vcp.end());
 }
 
 void Seed::unproject(const int index0, const int index1,
@@ -292,12 +307,12 @@ void Seed::unproject(const int index0, const int index1,
 		coord[y] = ans[y];
 	coord[3] = 1.0f;
 }
-
+using namespace Patch;
 void Seed::initialMatch(const int index, const int id) {
 	std::vector<int> indexes;
 	m_df.m_optim.collectImages(index, indexes);
-	//TODO: zameniti sa m_df.tm_tao-broj slika koje ucestvuju u optimizaciji
-	if (m_df.getNumOfImages() < (int)indexes.size())
+
+	if (m_df.m_tau < (int)indexes.size())
 		indexes.resize(m_df.getNumOfImages());
 
 	if (indexes.empty())
@@ -326,88 +341,85 @@ void Seed::initialMatch(const int index, const int id) {
 				collectCandidates(index, indexes,
 					*m_ppoints[index][index2][p], vcp);
 				vcptemp1 = vcp;
-				//		int count = 0;
-				//		Patch::Cpatch bestpatch;
+						int count = 0;
+						Patch::Cpatch bestpatch;
 				//		//======================================================================
-				//		for (int i = 0; i < (int)vcp.size(); ++i) {
-				//			Patch::Cpatch patch;
-				//			patch.m_coord = vcp[i]->m_coord;
-				//			patch.m_normal =
-				//				m_df.getPhoto(index).m_center - patch.m_coord;
+						for (int i = 0; i < (int)vcp.size(); ++i) {
+							Patch::Cpatch patch;
+							patch.m_coord = vcp[i]->m_coord;
+							patch.m_normal =
+								m_df.getPhoto(index).m_center - patch.m_coord;
 
-				//			unitize(patch.m_normal);
-				//			patch.m_normal[3] = 0.0;
-				//			patch.m_flag = 0;
+							unitize(patch.m_normal);
+							patch.m_normal[3] = 0.0;
+							patch.m_flag = 0;
 
-				//			++m_df.m_pos.m_counts[index][index2];
-				//			const int ix = ((int)floor(vcp[i]->m_icoord[0] + 0.5f)) / m_df.getmCsize();
-				//			const int iy = ((int)floor(vcp[i]->m_icoord[1] + 0.5f)) / m_df.getmCsize();
-				//			const int index3 = iy * m_df.m_pos.getmgWidths(vcp[i]->m_itmp) + ix;
-				//			if (vcp[i]->m_itmp < m_df.getNumOfImages())
-				//				++m_df.m_pos.m_counts[vcp[i]->m_itmp][index3];
+							++m_df.m_pos.m_counts[index][index2];
+							const int ix = ((int)floor(vcp[i]->m_icoord[0] + 0.5f)) / m_df.getmCsize();
+							const int iy = ((int)floor(vcp[i]->m_icoord[1] + 0.5f)) / m_df.getmCsize();
+							const int index3 = iy * m_df.m_pos.getmgWidths(vcp[i]->m_itmp) + ix;
+							if (vcp[i]->m_itmp < m_df.getNumOfImages())
+								++m_df.m_pos.m_counts[vcp[i]->m_itmp][index3];
 
-				//			const int flag = initialMatchSub(index, vcp[i]->m_itmp, id, patch);
-				//			if (flag == 0) {
-				//				++count;
-				//				if (bestpatch.score(m_df.m_nccThreshold) <
-				//					patch.score(m_df.m_nccThreshold))
-				//					bestpatch = patch;
-				//				if (m_df.m_countThreshold0 <= count)
-				//					break;
-				//			}
-				//		}
-				//		if (count != 0) {
-				//			Ppatch ppatch(new Cpatch(bestpatch));
-				//			m_df.m_pos.addPatch(ppatch);
-				//			++totalcount;
-				//			break;
-				//		}
-				//	}
-				//}
-			}
-			if (!vcptemp1.empty()) {
-				temp3Dpoint.push_back(vcptemp1);
-				//temp3DpointB.insert(temp3DpointB.end(), vcptemp1[0]);
-				vcptemp1.clear();
-			}
-		}
+							const int flag = initialMatchSub(index, vcp[i]->m_itmp, id, patch);
+							if (flag == 0) {
+								++count;
+								if (bestpatch.score(m_df.m_nccThreshold) <
+									patch.score(m_df.m_nccThreshold))
+									bestpatch = patch;
+								if (m_df.m_countThreshold0 <= count)
+									break;
+							}
+						}
+						if (count != 0) {
+							Ppatch ppatch(new Cpatch(bestpatch));
+							m_df.m_pos.addPatch(ppatch);
+							++totalcount;
+							break;
+						}
+					}
+				}
+			//if (!vcptemp1.empty()) {
+			//	temp3Dpoint.push_back(vcptemp1);
+			//	//temp3DpointB.insert(temp3DpointB.end(), vcptemp1[0]);
+			//	vcptemp1.clear();
+			//}
 	}
 	std::cerr << '(' << index << ',' << totalcount << ')' << std::flush;
-	//UtilityM ut;
-	//ut.WritePlySimple("D:/DUSAN/3Lateral/PMVSviaOpenCV/vc++/vc++/test.ply",temp3Dpoint);
 }
-		//TODO:3 kasnije dorada tacaka
-//int Seed::initialMatchSub(const int index0, const int index1,
-//	const int id, Patch::Cpatch& patch) {
-//
-//	//----------------------------------------------------------------------
-//	patch.m_images.clear();
-//	patch.m_images.push_back(index0);
-//	patch.m_images.push_back(index1);
-//
-//	++m_scounts[id];
-//
-//	//----------------------------------------------------------------------
-//	// We know that patch.m_coord is inside bimages and inside mask
-//	if (m_fm.m_optim.preProcess(patch, id, 1)) {
-//		++m_fcounts0[id];
-//		return 1;
-//	}
-//
-//	//----------------------------------------------------------------------  
-//	m_fm.m_optim.refinePatch(patch, id, 100);
-//
-//	//----------------------------------------------------------------------
-//	if (m_fm.m_optim.postProcess(patch, id, 1)) {
-//		++m_fcounts1[id];
-//		return 1;
-//	}
-//
-//	++m_pcounts[id];
-//	//----------------------------------------------------------------------
-//	return 0;
-//
-//}
+
+int Seed::initialMatchSub(const int index0, const int index1,
+	const int id, Patch::Cpatch& patch) {
+
+	//----------------------------------------------------------------------
+	patch.m_images.clear();
+	patch.m_images.push_back(index0);
+	patch.m_images.push_back(index1);
+	//if (id > 1) {
+	//	std::cerr << "id veci od 1" << std::endl;
+	//}
+	++m_scounts[id];
+
+	//----------------------------------------------------------------------
+	// We know that patch.m_coord is inside bimages and inside mask
+	if (m_df.m_optim.preProcess(patch, id, 1)) {
+		++m_fcounts0[id];
+		return 1;
+	}
+
+	//----------------------------------------------------------------------  
+	m_df.m_optim.refinePatch(patch, id, 100);
+
+	////----------------------------------------------------------------------
+	if (m_df.m_optim.postProcess(patch, id, 1)) {
+		++m_fcounts1[id];
+		return 1;
+	}
+
+	++m_pcounts[id];
+	//----------------------------------------------------------------------
+	return 0;
+}
 
 
 int Seed::canAdd(const int index, const int x, const int y) {
