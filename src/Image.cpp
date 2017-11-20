@@ -83,7 +83,7 @@ void Image::buildImage(const int filter, int w, int h, std::vector<unsigned char
 
 }
 
-void Image::buildImageByLevel(const int filter, std::vector<int> w, std::vector<int> h, std::vector<std::vector<unsigned char>>& img) {
+void Image::buildImageByLevel(const int filter, std::vector<int> w, std::vector<int> h, std::vector<std::vector<unsigned char>>& img, int maxLevel) {
 	Mat4 mask;
 	mask[0] = Vec4(1.0, 3.0, 3.0, 1.0);  mask[1] = Vec4(3.0, 9.0, 9.0, 3.0);
 	mask[2] = Vec4(3.0, 9.0, 9.0, 3.0);  mask[3] = Vec4(1.0, 3.0, 3.0, 1.0);
@@ -94,7 +94,7 @@ void Image::buildImageByLevel(const int filter, std::vector<int> w, std::vector<
 	for (int y = 0; y < 4; ++y)
 		for (int x = 0; x < 4; ++x)
 			mask[y][x] /= total;
-	int m_maxLevel = 3; 
+	int m_maxLevel = maxLevel;
 	//----------------------------------------------------------------------
 	// image
 	for (int level = 1; level < m_maxLevel; ++level) {

@@ -23,6 +23,8 @@ void DetectFeatures::run(std::string path, std::string name,
 	Organizer readOprionFile(path,name);
 	readOprionFile.init();
 	std::vector<std::string> namesOfFile;
+	std::string s = readOprionFile.getPathTofolder();
+	std::string nm = readOprionFile.getExtension();
 	readOprionFile.getFileFormDirectory(readOprionFile.getPathTofolder(),
 										readOprionFile.getExtension(),namesOfFile);
 	readOprionFile.initVisdata();
@@ -42,6 +44,7 @@ void DetectFeatures::run(std::string path, std::string name,
 	m_wsize = 5;
 	m_minimagenumthresho = 2;
 	m_level = readOprionFile.getLevel();
+	setMaxLevel(m_level);
 	readOprionFile.m_minImageNum = 2;
 	m_points.clear();
 	m_points.resize(num);
@@ -89,7 +92,7 @@ void DetectFeatures::run(std::string path, std::string name,
 		tempMask.release();
 		tempedge.release();
 
-		img.setWidthHeightByLevel(tempImg, imgWidth, imgHeight);
+		img.setWidthHeightByLevel(tempImg, imgWidth, imgHeight,m_level,getMaxLevel());
 
 		tempImg.release();
 		temp.release();
@@ -97,7 +100,7 @@ void DetectFeatures::run(std::string path, std::string name,
 
 	std::vector<std::vector<unsigned char>> tempL;
 	for (int i = 0; i < num;i++) {
-		img.buildImageByLevel(0, imgWidth[i], imgHeight[i], alImgChar[i]);
+		img.buildImageByLevel(0, imgWidth[i], imgHeight[i], alImgChar[i], getMaxLevel());
 	}
 
 	//----------------------- Finish Create image level
@@ -110,7 +113,7 @@ void DetectFeatures::run(std::string path, std::string name,
 
 		namePath = readOprionFile.getPathToTxt() + nameOfTxtFile;
 
-		photo.init(namePath,3);
+		photo.init(namePath,getMaxLevel());
 		photos.push_back(photo);
 	}
 	//----------------------------------- Finish calculate Camera parametras 
@@ -194,7 +197,7 @@ void DetectFeatures::RunFetureDetect(void) {
 		int fcsize = 16;
 		std::vector<cv::Point2f> cornPosition;
 		harris.run(alImgChar[cn], masksChar[0], edgesChar[0],
-			imgWidth[cn][0], imgHeight[cn][0], fcsize, sigma, cornPosition, result);
+			imgWidth[cn][m_level], imgHeight[cn][m_level], fcsize, sigma, cornPosition, result, m_level);
 
 		std::multiset<Cpoint>::reverse_iterator rbegin = result.rbegin();
 
@@ -218,7 +221,7 @@ void DetectFeatures::RunFetureDetect(void) {
 		std::vector<cv::Point2f> cornPositionDog;
 
 		dog.run(alImgChar[cn], maskDogchar[0], edgeDogchar[0],
-			imgWidth[cn][0], imgHeight[cn][0], fcsize, firstScale, lastScale, resultD, cornPositionDog);
+			imgWidth[cn][m_level], imgHeight[cn][m_level], fcsize, firstScale, lastScale, resultD, cornPositionDog, m_level);
 
 		std::multiset<Cpoint>::reverse_iterator rbeginD = resultD.rbegin();
 		while (rbeginD != resultD.rend()) {

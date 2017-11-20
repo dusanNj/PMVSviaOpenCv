@@ -28,7 +28,7 @@ public:
 		const float firstScale,   // 1.4f
 		const float lastScale,    // 4.0f
 		std::multiset<Cpoint> & result,
-		std::vector<cv::Point2f>& dogCorners);
+		std::vector<cv::Point2f>& dogCorners,int level);
 
 protected:
 	float m_firstScale;

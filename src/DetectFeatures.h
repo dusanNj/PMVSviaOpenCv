@@ -177,12 +177,20 @@ public:
 		const std::vector<int>& indexes,
 		const float minAngle, const float maxAngle,
 		const int num) const;
+
+	int getMaxLevel() {
+		return maxLevel;
+	}
+	void setMaxLevel(int level) {
+		maxLevel = level + 3;
+	}
 protected:
 	//const cv::Mat *m_Image;
 	std::vector<cv::Mat> *m_Images;
 	cv::Mat *m_Img;
 	int m_csize;
 	int m_level;
+	int maxLevel;
 
 	std::vector<std::vector<unsigned char>> ImagesChar;
 	std::vector<std::vector<std::vector<unsigned char>>> alImgChar;
