@@ -92,6 +92,7 @@
             Filter m_filt;
             Optim m_optim;
 
+
             /*Ovde cemo ucitati kamere koje kreiramo da bi mogli da im pristupimo kasnije*/
             std::vector<Photo> photos;
             std::vector<std::vector<int> > imgWidth;
@@ -100,6 +101,7 @@
             // jobs
             std::list<int> m_jobs;
 
+            int num_of_expand;
             void runMatching();
             int getMask(int index, int x, int y, int level);
             // targetImages

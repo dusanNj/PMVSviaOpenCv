@@ -7,6 +7,7 @@
     #include <vector>
 
     #include "patch.h"
+    #include "PatchOrganizer.h"
 
     class DetectFeatures;
 

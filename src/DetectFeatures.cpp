@@ -8,6 +8,7 @@
 
 DetectFeatures::DetectFeatures() : m_pos(*this), m_seed(*this), m_optim(*this), m_exp(*this), m_filt(*this) {
     m_nccThreshold = 0.7;
+    num_of_expand = 3;
 }
 
 //
@@ -392,7 +393,15 @@ void DetectFeatures::runMatching() {
     m_seed.run();
     m_pos.writePatchesAndImageProjections("", this->getNumOfImages());
     this->write("Test1", true, false, false);
-    m_exp.run();
+
+    for (int i = 0; i < num_of_expand; i++) {
+        m_exp.run();
+        updateThreshold();
+
+        ++m_depth;
+    }
+
+
     m_pos.writePatchesAndImageProjections("", this->getNumOfImages());
     this->write("Test_exp", true, false, false);
     // m_seed.clear();
