@@ -169,6 +169,42 @@ void DetectFeatures::updateThreshold(void) {
     m_countThreshold1 = 2;
 }
 
+int DetectFeatures::isNeighborRadius(const Patch::Cpatch& lhs,
+                                     const Patch::Cpatch& rhs,
+                                     const float hunit,
+                                     const float neighborThreshold,
+                                     const float radius) {
+    if (lhs.m_normal * rhs.m_normal < cos(120.0 * M_PI / 180.0)) {
+        return 0;
+    }
+    const Vec4f diff = rhs.m_coord - lhs.m_coord;
+
+    const float vunit = lhs.m_dscale + rhs.m_dscale;
+
+    const float f0 = lhs.m_normal * diff;
+    const float f1 = rhs.m_normal * diff;
+    float ftmp = (fabs(f0) + fabs(f1)) / 2.0;
+    ftmp /= vunit;
+
+    // this may loosen the isneighbor testing. need to tighten (decrease) threshold?
+    const float hsize = norm(2 * diff - lhs.m_normal * f0 - rhs.m_normal * f1) / 2.0 / hunit;
+
+    // radius check
+    if (radius / hunit < hsize) {
+        return 0;
+    }
+
+    if (1.0 < hsize) {
+        ftmp /= min(2.0f, hsize);
+    }
+
+    if (ftmp < neighborThreshold) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 void DetectFeatures::RunFetureDetect(void) {
     int cn = 0;
     do {
@@ -354,7 +390,10 @@ void DetectFeatures::write(const std::string prefix, bool bExportPLY, bool bExpo
 
 void DetectFeatures::runMatching() {
     m_seed.run();
-    this->write("Test1", true, false, false);
     m_pos.writePatchesAndImageProjections("", this->getNumOfImages());
+    this->write("Test1", true, false, false);
+    m_exp.run();
+    m_pos.writePatchesAndImageProjections("", this->getNumOfImages());
+    this->write("Test_exp", true, false, false);
     // m_seed.clear();
 }
