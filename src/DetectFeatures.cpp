@@ -396,6 +396,7 @@ void DetectFeatures::runMatching() {
 
     for (int i = 0; i < num_of_expand; i++) {
         m_exp.run();
+        m_filt.run();
         updateThreshold();
 
         ++m_depth;
@@ -405,4 +406,40 @@ void DetectFeatures::runMatching() {
     m_pos.writePatchesAndImageProjections("", this->getNumOfImages());
     this->write("Test_exp", true, false, false);
     // m_seed.clear();
+}
+
+int DetectFeatures::isNeighbor(const Patch::Cpatch& lhs,
+                               const Patch::Cpatch& rhs,
+                               const float hunit,
+                               const float neighborThreshold) {
+    if (lhs.m_normal * rhs.m_normal < cos(120.0 * M_PI / 180.0)) {
+        return 0;
+    }
+    const Vec4f diff = rhs.m_coord - lhs.m_coord;
+
+    const float vunit = lhs.m_dscale + rhs.m_dscale;
+
+    const float f0 = lhs.m_normal * diff;
+    const float f1 = rhs.m_normal * diff;
+    float ftmp = (fabs(f0) + fabs(f1)) / 2.0;
+    ftmp /= vunit;
+
+    // this may loosen the isneighbor testing. need to tighten (decrease) threshold?
+    const float hsize = norm(2 * diff - lhs.m_normal * f0 - rhs.m_normal * f1) / 2.0 / hunit;
+    if (1.0 < hsize) {
+        ftmp /= min(2.0f, hsize);
+    }
+
+    if (ftmp < neighborThreshold) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+int DetectFeatures::isNeighbor(const Patch::Cpatch& lhs, const Patch::Cpatch& rhs, const float neighborThreshold) {
+    const float hunit = (m_optim.getUnit(lhs.m_images[0], lhs.m_coord) +
+                         m_optim.getUnit(rhs.m_images[0], rhs.m_coord)) / 2.0
+        * m_csize;
+    return isNeighbor(lhs, rhs, hunit, neighborThreshold);
 }

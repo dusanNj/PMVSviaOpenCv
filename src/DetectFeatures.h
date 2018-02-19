@@ -48,7 +48,8 @@
                                  const float hunit,
                                  const float neighborThreshold,
                                  const float radius);
-
+            int isNeighbor(const Patch::Cpatch& lhs, const Patch::Cpatch& rhs, const float neighborThreshold);
+            int isNeighbor(const Patch::Cpatch& lhs, const Patch::Cpatch& rhs, const float hunit, const float neighborThreshold);
             int getNumOfImages() {
                 return (int)alImgChar.size();
             }

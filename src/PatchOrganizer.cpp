@@ -491,3 +491,38 @@ void PatchOrganizer::writePatches2(const std::string prefix, bool bExportPLY, bo
     // ofstr.close();
     // }
 }
+
+void PatchOrganizer::removePatch(const Patch::Ppatch& ppatch) {
+    for (int i = 0; i < (int)ppatch->m_images.size(); ++i) {
+        const int image = ppatch->m_images[i];
+        if (m_df.m_tnum <= image) {
+            continue;
+        }
+
+        const int& ix = ppatch->m_grids[i][0];
+        const int& iy = ppatch->m_grids[i][1];
+        const int index = iy * m_gwidths[image] + ix;
+        m_pgrids[image][index].erase(remove(m_pgrids[image][index].begin(),
+                                            m_pgrids[image][index].end(),
+                                            ppatch),
+                                     m_pgrids[image][index].end());
+    }
+
+    for (int i = 0; i < (int)ppatch->m_vimages.size(); ++i) {
+        const int image = ppatch->m_vimages[i];
+        #ifdef DEBUG
+            if (m_fm.m_tnum <= image) {
+                cerr << "Impossible in removePatch. m_vimages must be targetting images" << endl;
+                exit(1);
+            }
+        #endif
+
+        const int& ix = ppatch->m_vgrids[i][0];
+        const int& iy = ppatch->m_vgrids[i][1];
+        const int index = iy * m_gwidths[image] + ix;
+        m_vpgrids[image][index].erase(remove(m_vpgrids[image][index].begin(),
+                                             m_vpgrids[image][index].end(),
+                                             ppatch),
+                                      m_vpgrids[image][index].end());
+    }
+}

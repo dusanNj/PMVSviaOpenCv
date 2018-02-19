@@ -39,6 +39,7 @@
             void setScales(Patch::Cpatch& patch) const;
             void setGrids(Patch::Cpatch& patch) const;
             void addPatch(Patch::Ppatch& ppatch);
+            void removePatch(const Patch::Ppatch& ppatch);
             void writePatches2(const std::string prefix, bool bExportPLY, bool bExportPatch, bool bExportPSet);
             void writePatchesAndImageProjections(const std::string prefix, int numOfImgs);
             void collectPatches(std::priority_queue<Patch::Ppatch,
