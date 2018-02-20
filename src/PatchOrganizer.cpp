@@ -188,6 +188,104 @@ void PatchOrganizer::collectPatches(std::priority_queue<Patch::Ppatch,
     }
 }
 
+void PatchOrganizer::setVImagesVGrids(Patch::Ppatch& ppatch) {
+    setVImagesVGrids(*ppatch);
+}
+
+void PatchOrganizer::setVImagesVGrids(Patch::Cpatch& patch) {
+    std::vector<int> used;
+    used.resize(m_df.m_tnum);
+    fill(used.begin(), used.end(), 0);
+
+    std::vector<int>::iterator bimage = patch.m_images.begin();
+    std::vector<int>::iterator eimage = patch.m_images.end();
+    while (bimage != eimage) {
+        if ((*bimage) < m_df.m_tnum) {
+            used[*(bimage)] = 1;
+        }
+        ++bimage;
+    }
+
+    bimage = patch.m_vimages.begin();
+    eimage = patch.m_vimages.end();
+    while (bimage != eimage) {
+        used[*(bimage++)] = 1;
+    }
+
+    for (int image = 0; image < m_df.m_tnum; ++image) {
+        if (used[image]) {
+            continue;
+        }
+
+        int ix, iy;
+        if (isVisible0(patch, image, ix, iy,
+                       m_df.m_neighborThreshold, 1) == 0) {
+            continue;
+        }
+
+        // if (m_df.m_pss.getEdge(patch.m_coord, image, m_fm.m_level) == 0) {
+        // continue;
+        // }
+
+        patch.m_vimages.push_back(image);
+        patch.m_vgrids.push_back(TVec2<int>(ix, iy));
+    }
+}
+
+int PatchOrganizer::isVisible0(const Patch::Cpatch& patch, const int image, int& ix, int& iy, const float strict,
+                               const int lock) {
+    const Vec3f icoord =
+        m_df.getPhoto(image).project(image, patch.m_coord, m_df.getmLevel());
+    ix = ((int)floor(icoord[0] + 0.5f)) / m_df.getmCsize();
+    iy = ((int)floor(icoord[1] + 0.5f)) / m_df.getmCsize();
+
+    return isVisible(patch, image, ix, iy, strict, lock);
+}
+
+int PatchOrganizer::isVisible(const Patch::Cpatch& patch,
+                              const int image,
+                              const int& ix,
+                              const int& iy,
+                              const float strict,
+                              const int lock) {
+    const int& gwidth = m_gwidths[image];
+    const int& gheight = m_gheights[image];
+
+    if ((ix < 0) || (gwidth <= ix) || (iy < 0) || (gheight <= iy)) {
+        return 0;
+    }
+
+    if (m_df.m_depth == 0) {
+        return 1;
+    }
+
+    int ans = 0;
+    Ppatch dppatch = m_MAXDEPTH;
+    const int index = iy * gwidth + ix;
+
+    if (m_dpgrids[image][index] == m_MAXDEPTH) {
+        ans = 1;
+    } else {
+        dppatch = m_dpgrids[image][index];
+    }
+
+    if (ans == 1) {
+        return 1;
+    }
+
+
+    Vec4f ray = patch.m_coord - m_df.getPhoto(image).m_center;
+    unitize(ray);
+    const float diff = ray * (patch.m_coord - dppatch->m_coord);
+    const float factor = min(2.0, 2.0 + ray * patch.m_normal);
+
+    if (diff < m_df.m_optim.getUnit(image, patch.m_coord) * m_df.getmCsize() * strict * factor) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 void PatchOrganizer::setGridsImages(Patch::Cpatch& patch, const std::vector<int>& images) {
     patch.m_images.clear();
     patch.m_grids.clear();

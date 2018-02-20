@@ -39,6 +39,15 @@
             void setScales(Patch::Cpatch& patch) const;
             void setGrids(Patch::Cpatch& patch) const;
             void addPatch(Patch::Ppatch& ppatch);
+            void setVImagesVGrids(Patch::Ppatch& ppatch);
+            void setVImagesVGrids(Patch::Cpatch& patch);
+            int isVisible0(const Patch::Cpatch& patch, const int image, int& ix, int& iy, const float strict, const int lock);
+            int isVisible(const Patch::Cpatch& patch,
+                          const int image,
+                          const int& ix,
+                          const int& iy,
+                          const float strict,
+                          const int lock);
             void removePatch(const Patch::Ppatch& ppatch);
             void writePatches2(const std::string prefix, bool bExportPLY, bool bExportPatch, bool bExportPSet);
             void writePatchesAndImageProjections(const std::string prefix, int numOfImgs);
