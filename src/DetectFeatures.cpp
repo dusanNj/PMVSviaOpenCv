@@ -38,11 +38,10 @@ void DetectFeatures::run(std::string path, std::string name, const int csize) {
     m_visdata2 = readOprionFile.m_visdata2temp;
 
     m_csize = csize;
-    m_wsize = 5;
-    m_minimagenumthresho = 2;
+    m_wsize = readOprionFile.winsize;
+    m_minimagenumthresho = readOprionFile.m_minImageNum;
     m_level = readOprionFile.getLevel();
     setMaxLevel(m_level);
-    readOprionFile.m_minImageNum = 2;
     m_points.clear();
     m_points.resize(num);
     m_tnum = readOprionFile.imgIndex.size();
