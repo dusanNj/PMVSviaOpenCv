@@ -1,5 +1,6 @@
 #include "DetectFeatures.h"
 #include "Filter.h"
+#include "LapackImpl.h"
 #include <ctime>
 #include <time.h>
 
@@ -17,6 +18,10 @@ void Filter::run(void) {
     filterOutside();
     setDepthMapsVGridsVPGridsAddPatchV(1);
     filterExact();
+    setDepthMapsVGridsVPGridsAddPatchV(1);
+    filterNeighbor(1);
+    setDepthMapsVGridsVPGridsAddPatchV(1);
+    filterSmallGroups();
     setDepthMapsVGridsVPGridsAddPatchV(1);
 }
 
@@ -291,6 +296,195 @@ void Filter::filterOutside(void) {
     << "%)\t" << (tv - curtime) / CLOCKS_PER_SEC << " secs" << std::endl;
 }
 
+void Filter::filterNeighbor(const int times) {
+    time_t tv;
+    time(&tv);
+    time_t curtime = tv;
+    std::cerr << "FilterNeighbor:\t" << std::flush;
+
+    // ??? notice (1) to avoid removing m_fix=1
+    m_df.m_pos.collectPatches(1);
+    if (m_df.m_pos.m_ppatches.empty()) {
+        return;
+    }
+
+    m_rejects.resize((int)m_df.m_pos.m_ppatches.size());
+    fill(m_rejects.begin(), m_rejects.end(), 0);
+
+    // Lapack is not thread-safe? Sometimes, the code gets stuck here.
+    int count = 0;
+    for (m_time = 0; m_time < times; ++m_time) {
+        m_df.m_count = 0;
+
+        m_df.m_jobs.clear();
+        const int jtmp = (int)ceil(m_df.m_pos.m_ppatches.size() /
+                                   (float)m_df.m_junit);
+        for (int j = 0; j < jtmp; ++j) {
+            m_df.m_jobs.push_back(j);
+        }
+
+        filterNeighborThread();
+
+        std::vector<Patch::Ppatch>::iterator bpatch = m_df.m_pos.m_ppatches.begin();
+        std::vector<Patch::Ppatch>::iterator epatch = m_df.m_pos.m_ppatches.end();
+        std::vector<int>::iterator breject = m_rejects.begin();
+
+        while (bpatch != epatch) {
+            if ((*breject) == m_time + 1) {
+                count++;
+                m_df.m_pos.removePatch(*bpatch);
+            }
+
+            ++bpatch;
+            ++breject;
+        }
+    }
+    time(&tv);
+    std::cerr << (int)m_df.m_pos.m_ppatches.size() << " -> "
+    << (int)m_df.m_pos.m_ppatches.size() - count << " ("
+    << 100 * ((int)m_df.m_pos.m_ppatches.size() - count) / (float)m_df.m_pos.m_ppatches.size()
+    << "%)\t" << (tv - curtime) / CLOCKS_PER_SEC << " secs" << std::endl;
+}
+
+void Filter::filterNeighborThread(void) {
+    const int size = (int)m_df.m_pos.m_ppatches.size();
+    while (1) {
+        int jtmp = -1;
+        if (!m_df.m_jobs.empty()) {
+            jtmp = m_df.m_jobs.front();
+            m_df.m_jobs.pop_front();
+        }
+        if (jtmp == -1) {
+            break;
+        }
+
+        const int begin = m_df.m_junit * jtmp;
+        const int end = min(size, m_df.m_junit * (jtmp + 1));
+
+        for (int p = begin; p < end; ++p) {
+            Patch::Ppatch& ppatch = m_df.m_pos.m_ppatches[p];
+            if (m_rejects[p]) {
+                continue;
+            }
+
+            std::vector<Patch::Ppatch> neighbors;
+            // m_fm.m_pos.findNeighbors(*ppatch, neighbors, 0, 4, 2);
+            m_df.m_pos.findNeighbors(*ppatch, neighbors, 0, 4, 2, 1);
+
+            // ?? new filter
+            if ((int)neighbors.size() < 8) {
+                // if ((int)neighbors.size() < 8)
+                m_rejects[p] = m_time + 1;
+            } else {
+                // Fit a quadratic surface
+                if (filterQuad(*ppatch, neighbors)) {
+                    m_rejects[p] = m_time + 1;
+                }
+            }
+        }
+    }
+
+    /*
+    mtx_lock(&m_fm.m_lock);
+    const int id = m_fm.m_count++;
+    mtx_unlock(&m_fm.m_lock);
+
+    const int size = (int)m_fm.m_pos.m_ppatches.size();
+    const int itmp = (int)ceil(size / (float)m_fm.m_CPU);
+    const int begin = id * itmp;
+    const int end = min(size, (id + 1) * itmp);
+
+    for (int p = begin; p < end; ++p) {
+    Ppatch& ppatch = m_fm.m_pos.m_ppatches[p];
+    if (m_rejects[p])
+    continue;
+
+    vector<Ppatch> neighbors;
+    m_fm.m_pos.findNeighbors(*ppatch, neighbors, 0, 4, 2);
+
+    //?? new filter
+    if ((int)neighbors.size() < 6)
+    //if ((int)neighbors.size() < 8)
+    m_rejects[p] = m_time + 1;
+    else {
+    // Fit a quadratic surface
+    if (filterQuad(*ppatch, neighbors))
+    m_rejects[p] = m_time + 1;
+    }
+    }
+    */
+}
+
+int Filter::filterQuad(const Patch::Cpatch& patch, const std::vector<Patch::Ppatch>& neighbors) {
+    std::vector<std::vector<float> > A;
+    std::vector<float> b, x;
+
+    Vec4f xdir, ydir;
+    ortho(patch.m_normal, xdir, ydir);
+
+    const int nsize = (int)neighbors.size();
+
+    float h = 0.0f;
+    for (int n = 0; n < nsize; ++n) {
+        h += norm(neighbors[n]->m_coord - patch.m_coord);
+    }
+    h /= nsize;
+
+    A.resize(nsize);
+    b.resize(nsize);
+
+    std::vector<float> fxs, fys, fzs;
+    fxs.resize(nsize);
+    fys.resize(nsize);
+    fzs.resize(nsize);
+    for (int n = 0; n < nsize; ++n) {
+        A[n].resize(5);
+        Vec4f diff = neighbors[n]->m_coord - patch.m_coord;
+        fxs[n] = diff * xdir / h;
+        fys[n] = diff * ydir / h;
+        fzs[n] = diff * patch.m_normal;
+
+        A[n][0] = fxs[n] * fxs[n];
+        A[n][1] = fys[n] * fys[n];
+        A[n][2] = fxs[n] * fys[n];
+        A[n][3] = fxs[n];
+        A[n][4] = fys[n];
+        b[n] = fzs[n];
+    }
+    x.resize(5);
+    LapackImpl::lls(A, b, x);
+
+    // Compute residual divided by m_dscale
+    const int inum = min(m_df.m_tau, (int)patch.m_images.size());
+    float unit = 0.0;
+    // for (int i = 0; i < (int)patch.m_images.size(); ++i)
+    for (int i = 0; i < inum; ++i) {
+        unit += m_df.m_optim.getUnit(patch.m_images[i], patch.m_coord);
+    }
+    // unit /= (int)patch.m_images.size();
+    unit /= inum;
+
+    float residual = 0.0f;
+    for (int n = 0; n < nsize; ++n) {
+        const float res =
+            x[0] * (fxs[n] * fxs[n]) +
+            x[1] * (fys[n] * fys[n]) +
+            x[2] * (fxs[n] * fys[n]) +
+            x[3] * fxs[n] +
+            x[4] * fys[n] - fzs[n];
+        // residual += fabs(res) / neighbors[n]->m_dscale;
+        residual += fabs(res) / unit;
+    }
+
+    residual /= (nsize - 5);
+
+    if (residual < m_df.m_quadThreshold) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 void Filter::setDepthMaps(void) {
     // initialize
     for (int index = 0; index < m_df.m_tnum; ++index) {
@@ -430,6 +624,160 @@ void Filter::setVGridsVPGridsThread(void) {
         for (int p = begin; p < end; ++p) {
             Patch::Ppatch& ppatch = m_df.m_pos.m_ppatches[p];
             m_df.m_pos.setVImagesVGrids(ppatch);
+        }
+    }
+}
+
+void Filter::filterSmallGroups(void) {
+    time_t tv;
+    time(&tv);
+    time_t curtime = tv;
+    std::cerr << "FilterGroups:\t" << std::flush;
+    m_df.m_pos.collectPatches();
+    if (m_df.m_pos.m_ppatches.empty()) {
+        return;
+    }
+
+    const int psize = (int)m_df.m_pos.m_ppatches.size();
+    std::vector<int> label;
+    label.resize(psize);
+    fill(label.begin(), label.end(), -1);
+
+    std::list<int> untouch;
+    std::vector<Patch::Ppatch>::iterator bpatch = m_df.m_pos.m_ppatches.begin();
+    for (int p = 0; p < psize; ++p, ++bpatch) {
+        untouch.push_back(p);
+        (*bpatch)->m_flag = p;
+    }
+
+    int id = -1;
+    while (!untouch.empty()) {
+        const int pid = untouch.front();
+        untouch.pop_front();
+
+        if (label[pid] != -1) {
+            continue;
+        }
+
+        label[pid] = ++id;
+        std::list<int> ltmp;
+        ltmp.push_back(pid);
+
+        while (!ltmp.empty()) {
+            const int ptmp = ltmp.front();
+            ltmp.pop_front();
+
+            filterSmallGroupsSub(ptmp, id, label, ltmp);
+        }
+    }
+    id++;
+
+    std::vector<int> size;
+    size.resize(id);
+    std::vector<int>::iterator bite = label.begin();
+    std::vector<int>::iterator eite = label.end();
+    while (bite != eite) {
+        ++size[*bite];
+        ++bite;
+    }
+
+    const int threshold = max(20, psize / 10000);
+    std::cerr << threshold << std::endl;
+
+    bite = size.begin();
+    eite = size.end();
+    while (bite != eite) {
+        if (*bite < threshold) {
+            *bite = 0;
+        } else {
+            *bite = 1;
+        }
+        ++bite;
+    }
+
+    int count = 0;
+
+    bite = label.begin();
+    eite = label.end();
+    bpatch = m_df.m_pos.m_ppatches.begin();
+    while (bite != eite) {
+        if ((*bpatch)->m_fix) {
+            ++bite;
+            ++bpatch;
+            continue;
+        }
+
+        if (size[*bite] == 0) {
+            m_df.m_pos.removePatch(*bpatch);
+            count++;
+        }
+        ++bite;
+        ++bpatch;
+    }
+    time(&tv);
+    std::cerr << (int)m_df.m_pos.m_ppatches.size() << " -> "
+    << (int)m_df.m_pos.m_ppatches.size() - count << " ("
+    << 100 * ((int)m_df.m_pos.m_ppatches.size() - count) / (float)m_df.m_pos.m_ppatches.size()
+    << "%)\t" << (tv - curtime) / CLOCKS_PER_SEC << " secs" << std::endl;
+}
+
+void Filter::filterSmallGroupsSub(const int pid, const int id, std::vector<int>& label, std::list<int>& ltmp) {
+    // find neighbors of ptmp and set their ids
+    const Patch::Cpatch& patch = *m_df.m_pos.m_ppatches[pid];
+
+    const int index = patch.m_images[0];
+    const int ix = patch.m_grids[0][0];
+    const int iy = patch.m_grids[0][1];
+    const int gwidth = m_df.m_pos.m_gwidths[index];
+    const int gheight = m_df.m_pos.m_gheights[index];
+
+    for (int y = -1; y <= 1; ++y) {
+        const int iytmp = iy + y;
+        if ((iytmp < 0) || (gheight <= iytmp)) {
+            continue;
+        }
+        for (int x = -1; x <= 1; ++x) {
+            const int ixtmp = ix + x;
+            if ((ixtmp < 0) || (gwidth <= ixtmp)) {
+                continue;
+            }
+
+            // if (1 < abs(x) + abs(y))
+            // continue;
+
+            const int index2 = iytmp * gwidth + ixtmp;
+            std::vector<Patch::Ppatch>::iterator bgrid = m_df.m_pos.m_pgrids[index][index2].begin();
+            std::vector<Patch::Ppatch>::iterator egrid = m_df.m_pos.m_pgrids[index][index2].end();
+            while (bgrid != egrid) {
+                const int itmp = (*bgrid)->m_flag;
+                if (label[itmp] != -1) {
+                    ++bgrid;
+                    continue;
+                }
+
+                if (m_df.isNeighbor(patch, **bgrid,
+                                    m_df.m_neighborThreshold2)) {
+                    label[itmp] = id;
+                    ltmp.push_back(itmp);
+                }
+                ++bgrid;
+            }
+            bgrid = m_df.m_pos.m_vpgrids[index][index2].begin();
+            egrid = m_df.m_pos.m_vpgrids[index][index2].end();
+            while (bgrid != egrid) {
+                const int itmp = (*bgrid)->m_flag;
+                if (label[itmp] != -1) {
+                    ++bgrid;
+                    continue;
+                }
+
+                if (m_df.isNeighbor(patch, **bgrid,
+                                    m_df.m_neighborThreshold2)) {
+                    label[itmp] = id;
+                    ltmp.push_back(itmp);
+                }
+                ++bgrid;
+            }
         }
     }
 }

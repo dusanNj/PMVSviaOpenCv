@@ -101,6 +101,7 @@
             int m_count;
             // jobs
             std::list<int> m_jobs;
+            int m_junit;
 
             int num_of_expand;
             void runMatching();
