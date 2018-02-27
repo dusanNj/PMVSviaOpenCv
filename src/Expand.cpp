@@ -87,7 +87,7 @@ void Expand::findEmptyBlocks(const Patch::Ppatch& ppatch, std::vector<std::vecto
     const float radiushigh = radius * 1.5f;  // 2.0f;//1.5f;
 
     std::vector<Patch::Ppatch> neighbors;
-    m_df.m_pos.findNeighbors(patch, neighbors, 1, 2.5f, 1, 1);  // 3.0f);
+    m_df.m_pos.findNeighbors(patch, neighbors, 1, 2.5f, 1, 0);  // 3.0f);
 
     std::vector<Patch::Ppatch>::iterator bpatch = neighbors.begin();
     std::vector<Patch::Ppatch>::iterator epatch = neighbors.end();

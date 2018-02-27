@@ -28,7 +28,7 @@
             UtilityM();
             ~UtilityM();
 
-            void drawCorners(cv::Mat& img, std::vector<cv::Point2f>& corn, int n);
+            void drawCorners(cv::Mat& img, std::vector<cv::Point2f>& corn, int n, int level);
             void convertImgToUcharArray(cv::Mat in, int width, int height, std::vector<unsigned char>& out);
 
             void setDrawCorner(drawCornerFor d) {

@@ -1,4 +1,7 @@
 #include "Organizer.h"
+#define _USE_MATH_DEFINES
+#include <algorithm>
+#include <math.h>
 
 
 Organizer::Organizer(std::string path, std::string name) {
@@ -63,6 +66,9 @@ void Organizer::init() {
             ifstr >> winsize;
         } else if (name == "m_minImageNum") {
             ifstr >> m_minImageNum;
+        } else if (name == "max_angle") {
+            ifstr >> max_angle;
+            max_angle *= M_PI / 180.0f;
         } else if (name == "useBound") {
             ifstr >> m_useBound;
             if (m_useBound == 0) {

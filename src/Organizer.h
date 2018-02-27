@@ -29,9 +29,10 @@
             std::vector<int> m_bindexes;
             int m_useBound;
             int winsize;
+            double max_angle;
             // int txts;
 
-            std::vector<int> imgIndex; // U pmvs-u je ovo m_timages
+            std::vector<int> imgIndex;  // U pmvs-u je ovo m_timages
             std::vector<int> m_oimages;
             std::vector<cv::Mat> images;
             std::vector<std::vector<int> > m_visdatatemp;

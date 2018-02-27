@@ -31,9 +31,6 @@ void DetectFeatures::run(std::string path, std::string name, const int csize) {
     nameOfimages = namesOfFile;
     pathtoFolder = pathToF;
 
-
-    /*readOprionFile.m_oimages = 0;*/
-
     m_visdata = readOprionFile.m_visdatatemp;
     m_visdata2 = readOprionFile.m_visdata2temp;
 
@@ -140,7 +137,7 @@ void DetectFeatures::run(std::string path, std::string name, const int csize) {
 
     m_neighborThreshold2 = 1.0f;
 
-    m_maxAngleThreshold = 10 * M_PI / 180.0f;
+    m_maxAngleThreshold = readOprionFile.max_angle;
 
     m_nccThresholdBefore = m_nccThreshold - 0.3f;
 
@@ -150,17 +147,6 @@ void DetectFeatures::run(std::string path, std::string name, const int csize) {
     m_sequenceThreshold = -1;
     m_depth = 0;
 }
-
-//
-// int DetectFeatures::countImageIndex() {
-// int i = 0;
-//
-////if (m_Image->empty()) {
-////	return 0;
-////}
-////i++;
-// return i;
-// }
 
 void DetectFeatures::updateThreshold(void) {
     m_nccThreshold -= 0.05f;
@@ -214,9 +200,9 @@ void DetectFeatures::RunFetureDetect(void) {
 
         float sigma = 4.0;
         const float firstScale = 1.0f;
-        const float lastScale = 3.0  /*3.0f*/;
-        int maxLevel = 3;
-        Harris harris(maxLevel);
+        const float lastScale = 3.0;
+
+        Harris harris(this->getMaxLevel());
         std::multiset<Cpoint> result;
         std::vector<std::vector<unsigned char> > imgCharDog = ImagesChar;
         std::vector<std::vector<unsigned char> > maskDogchar  /*= masksChar*/;
@@ -243,7 +229,7 @@ void DetectFeatures::RunFetureDetect(void) {
         cv::Mat drawFeaturesImg = cv::imread(pathtoFolder + nameOfimages[cn]);
         UtilityM ut;
         ut.setDrawCorner(UtilityM::drawCornerFor::harris);
-        ut.drawCorners(drawFeaturesImg, cornPosition, cn);
+        ut.drawCorners(drawFeaturesImg, cornPosition, cn, m_level);
         cornPosition.clear();
 
         // -----------------------------------------------------------Dog
@@ -263,7 +249,7 @@ void DetectFeatures::RunFetureDetect(void) {
         cv::Mat drawFeaturesImgD = cv::imread(pathtoFolder + nameOfimages[cn]);
         UtilityM utD;
         utD.setDrawCorner(UtilityM::drawCornerFor::dog);
-        utD.drawCorners(drawFeaturesImgD, cornPositionDog, cn);
+        utD.drawCorners(drawFeaturesImgD, cornPositionDog, cn, m_level);
 
         cn++;
     } while (alImgChar.size() > cn);
@@ -390,19 +376,18 @@ void DetectFeatures::write(const std::string prefix, bool bExportPLY, bool bExpo
 
 void DetectFeatures::runMatching() {
     m_seed.run();
-    m_pos.writePatchesAndImageProjections("", this->getNumOfImages());
     this->write("Test1", true, false, false);
+
+    num_of_expand = 1;
 
     for (int i = 0; i < num_of_expand; i++) {
         m_exp.run();
-        m_filt.run();
+        // m_filt.run();
         updateThreshold();
 
         ++m_depth;
     }
 
-
-    m_pos.writePatchesAndImageProjections("", this->getNumOfImages());
     this->write("Test_exp", true, false, false);
     // m_seed.clear();
 }
